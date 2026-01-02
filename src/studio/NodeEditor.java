@@ -223,7 +223,7 @@ public class NodeEditor extends BaseDialog {
                     nodeDataList.add(data);
                 }
                 
-                String json = JsonIO.json.toJson(nodeDataList, Seq.class);
+                String json = JsonIO.json().toJson(nodeDataList);
                 
                 Core.files.local("mods/studio-scripts/" + currentScriptName + ".json").writeString(json);
                 
@@ -232,7 +232,7 @@ public class NodeEditor extends BaseDialog {
                 
                 dialog.hide();
             } catch(Exception e) {
-                Vars.ui.showException("Save failed", e);
+                Vars.ui.showException(e);
             }
         }).size(150f, 50f);
         
@@ -269,7 +269,7 @@ public class NodeEditor extends BaseDialog {
     private void loadScript(String name) {
         try {
             String json = Core.files.local("mods/studio-scripts/" + name + ".json").readString();
-            Seq<NodeData> nodeDataList = JsonIO.json.fromJson(Seq.class, NodeData.class, json);
+            Seq<NodeData> nodeDataList = JsonIO.json().fromJson(Seq.class, json);
             
             canvas.nodes.clear();
             Seq<Node> loadedNodes = new Seq<>();
@@ -309,7 +309,7 @@ public class NodeEditor extends BaseDialog {
             statusLabel.setText("Loaded: " + name);
             
         } catch(Exception e) {
-            Vars.ui.showException("Load failed", e);
+            Vars.ui.showException(e);
         }
     }
     
@@ -329,13 +329,13 @@ public class NodeEditor extends BaseDialog {
             }
             
             if(!hasEventNode) {
-                Vars.ui.showInfo("No event nodes found! Add an 'On Start', 'On Wave', or 'On Unit Spawn' node.");
+                Vars.ui.showInfoFade("No event nodes found! Add an 'On Start', 'On Wave', or 'On Unit Spawn' node.");
             } else {
                 statusLabel.setText("Script executed!");
             }
             
         } catch(Exception e) {
-            Vars.ui.showException("Run failed", e);
+            Vars.ui.showException(e);
         }
     }
     
