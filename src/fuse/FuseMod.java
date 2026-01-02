@@ -5,6 +5,7 @@ import arc.util.*;
 import mindustry.*;
 import mindustry.game.EventType.*;
 import mindustry.mod.*;
+import mindustry.gen.*;
 
 public class FuseMod extends Mod {
     
@@ -13,6 +14,8 @@ public class FuseMod extends Mod {
     public static FuseRenderer renderer;
     public static FuseControls controls;
     public static FuseHUD hud;
+    
+    private Unit lastControlledUnit = null;
     
     public FuseMod() {
         Log.info("Fuse mod initializing...");
@@ -30,22 +33,31 @@ public class FuseMod extends Mod {
         controls = new FuseControls();
         hud = new FuseHUD();
         
-        Events.on(UnitControlEvent.class, event -> {
-            if (event.player == Vars.player && event.unit != null) {
-                enableFuse();
-            }
-        });
-        
         Events.run(Trigger.update, () -> {
-            if (enabled && (Vars.player == null || Vars.player.unit() == null || Vars.player.unit().isPlayer())) {
-                disableFuse();
-            }
+            checkUnitControl();
         });
         
         Log.info("Fuse mod loaded successfully!");
     }
     
+    private void checkUnitControl() {
+        if (Vars.player == null) return;
+        
+        Unit currentUnit = Vars.player.unit();
+        
+        if (currentUnit != null && !currentUnit.isPlayer() && currentUnit != lastControlledUnit) {
+            lastControlledUnit = currentUnit;
+            enableFuse();
+        }
+        
+        if (enabled && (currentUnit == null || currentUnit.isPlayer())) {
+            disableFuse();
+            lastControlledUnit = null;
+        }
+    }
+    
     public static void enableFuse() {
+        if (enabled) return;
         enabled = true;
         controls.show();
         hud.show();
@@ -53,9 +65,11 @@ public class FuseMod extends Mod {
     }
     
     public static void disableFuse() {
+        if (!enabled) return;
         enabled = false;
         controls.hide();
         hud.hide();
+        camera.reset();
         Log.info("Fuse mode: INACTIVE");
     }
 }
