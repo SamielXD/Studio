@@ -1,12 +1,7 @@
-{
-  "name": "fuse",
-  "displayName": "Fuse",
-  "author": "YourName",
-  "description": "Merge with your units. Immersive FPV control with mobile joysticks.",
-  "version": "1.0.0",
-  "minGameVersion": "154",
-  "dependencies": [],
-  "hidden": false,
-  "java": true,
-  "main": "fuse.FuseMod"
-}
+name: "Studio"
+author: "SamielXD"
+description: "Visual scripting system for Mindustry"
+version: "1.0"
+minGameVersion: "154"
+java: true
+main: "studio.StudioMod"
