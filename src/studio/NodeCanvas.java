@@ -35,7 +35,7 @@ public class NodeCanvas extends Element {
 
     public NodeCanvas(NodeEditor editor) {
         this.editor = editor;
-        setTouchable(Touchable.enabled);
+        this.touchable = Touchable.enabled;
         
         addListener(new InputListener() {
             @Override
