@@ -54,7 +54,7 @@ public class StudioMod extends Mod {
             if(file.extension().equals("json")) {
                 try {
                     String json = file.readString();
-                    Script script = JsonIO.read(Script.class, json);
+                    Script script = new Script();
                     script.fileName = file.name();
                     loadedScripts.add(script);
                     Log.info("Loaded script: " + file.name());
