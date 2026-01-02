@@ -94,7 +94,7 @@ public class NodeEditor extends BaseDialog {
 
     void buildToolbox(Table t) {
         t.add("[accent]Toolbox").row();
-        t.image().color(Color.accent).fillX().height(3f).pad(5f).row();
+        t.image().color(mindustry.graphics.Pal.accent).fillX().height(3f).pad(5f).row();
         
         t.add("[lightgray]Events").left().padTop(10f).row();
         t.button("Wave Start", Styles.flatToggleMenut, () -> {
