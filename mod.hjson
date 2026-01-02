@@ -1,0 +1,11 @@
+{
+  "name": "tooltips+",
+  "displayName": "ToolTips+",
+  "author": "YourName",
+  "description": "Enhanced tooltips showing extra stats",
+  "version": "1.0",
+  "minGameVersion": "154",
+  "dependencies": [],
+  "hidden": false,
+  "main": "tooltipsplus.TooltipsPlusMod"
+}
