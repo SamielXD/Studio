@@ -9,6 +9,7 @@ import arc.util.*;
 import mindustry.*;
 import mindustry.gen.*;
 import mindustry.ui.*;
+import mindustry.game.EventType.*;
 
 public class FuseHUD {
     
@@ -19,6 +20,7 @@ public class FuseHUD {
     
     public FuseHUD() {
         buildUI();
+        setupUpdateLoop();
     }
     
     private void buildUI() {
@@ -51,10 +53,10 @@ public class FuseHUD {
         
         container.add(cockpitPanel).pad(20f).top().left().row();
         container.add(crosshairTable).expand().center();
-        
-        Time.run(5f, () -> {
-            Events.run(Trigger.update, this::update);
-        });
+    }
+    
+    private void setupUpdateLoop() {
+        Events.run(Trigger.update, this::update);
     }
     
     private void update() {
@@ -85,7 +87,7 @@ public class FuseHUD {
     }
     
     public void show() {
-        if (!Core.scene.getChildren().contains(container, true)) {
+        if (!Core.scene.root.getChildren().contains(container, true)) {
             Core.scene.add(container);
         }
     }
