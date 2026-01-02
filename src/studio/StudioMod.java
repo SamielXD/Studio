@@ -1,3 +1,4 @@
+
 package studio;
 
 import arc.Events;
@@ -29,7 +30,7 @@ public class StudioMod extends Mod {
     }
 
     void setupUI() {
-        Vars.ui.menufrag.addButton("Studio", arc.scene.ui.layout.Table::button, () -> {
+        Vars.ui.menufrag.addButton("Studio", mindustry.gen.Icon.edit, () -> {
             nodeEditor.show();
         });
     }
