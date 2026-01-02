@@ -23,15 +23,6 @@ public class FuseRenderer {
         
         worldRotation = -unit.rotation + 90f;
         
-        Draw.trans().rotate(worldRotation * Mathf.degRad, Core.camera.position.x, Core.camera.position.y);
-    }
-    
-    public void applyRotation() {
-        if (!FuseMod.enabled) return;
-        
-        Unit unit = Vars.player.unit();
-        if (unit == null) return;
-        
         float cx = Core.camera.position.x;
         float cy = Core.camera.position.y;
         
