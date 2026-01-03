@@ -43,55 +43,42 @@ public class NodeCanvas extends Element {
                     return true;
                 }
 
-                if(mode.equals("move")) {
-                    for(Node node : nodes) {
-                        if(isInsideNode(worldPos.x, worldPos.y, node)) {
-                            dragNode = node;
-                            dragStart.set(worldPos.x - node.x, worldPos.y - node.y);
-                            return true;
-                        }
-                    }
+                Node clickedNode = getNodeAt(worldPos.x, worldPos.y);
+
+                if(mode.equals("move") && clickedNode != null) {
+                    dragNode = clickedNode;
+                    dragStart.set(worldPos.x - clickedNode.x, worldPos.y - clickedNode.y);
+                    return true;
                 }
 
-                if(mode.equals("edit")) {
-                    for(Node node : nodes) {
-                        if(isInsideNode(worldPos.x, worldPos.y, node)) {
-                            selectedNode = node;
-                            if(onNodeEdit != null) {
-                                onNodeEdit.run();
-                            }
-                            return true;
-                        }
+                if(mode.equals("edit") && clickedNode != null) {
+                    selectedNode = clickedNode;
+                    if(onNodeEdit != null) {
+                        onNodeEdit.run();
                     }
+                    return true;
                 }
 
-                if(mode.equals("connect")) {
-                    for(Node node : nodes) {
-                        if(isInsideNode(worldPos.x, worldPos.y, node)) {
-                            if(connectStart == null) {
-                                connectStart = node;
-                            } else {
-                                if(connectStart != node && !connectStart.connections.contains(node)) {
-                                    connectStart.connections.add(node);
-                                }
-                                connectStart = null;
-                            }
-                            return true;
+                if(mode.equals("connect") && clickedNode != null) {
+                    if(connectStart == null) {
+                        connectStart = clickedNode;
+                    } else {
+                        if(connectStart != clickedNode && !connectStart.connections.contains(clickedNode)) {
+                            connectStart.connections.add(clickedNode);
                         }
+                        connectStart = null;
                     }
+                    return true;
+                } else if(mode.equals("connect")) {
                     connectStart = null;
                 }
 
-                if(mode.equals("delete")) {
-                    for(Node node : nodes) {
-                        if(isInsideNode(worldPos.x, worldPos.y, node)) {
-                            nodes.remove(node);
-                            for(Node n : nodes) {
-                                n.connections.remove(node);
-                            }
-                            return true;
-                        }
+                if(mode.equals("delete") && clickedNode != null) {
+                    nodes.remove(clickedNode);
+                    for(Node n : nodes) {
+                        n.connections.remove(clickedNode);
                     }
+                    return true;
                 }
 
                 return true;
@@ -133,11 +120,18 @@ public class NodeCanvas extends Element {
         });
     }
 
-    private boolean isInsideNode(float worldX, float worldY, Node node) {
-        return worldX >= node.x && 
-               worldX <= node.x + node.width &&
-               worldY >= node.y && 
-               worldY <= node.y + node.height;
+    private Node getNodeAt(float worldX, float worldY) {
+        for(int i = nodes.size - 1; i >= 0; i--) {
+            Node node = nodes.get(i);
+            float margin = 20f;
+            if(worldX >= node.x - margin && 
+               worldX <= node.x + node.width + margin &&
+               worldY >= node.y - margin && 
+               worldY <= node.y + node.height + margin) {
+                return node;
+            }
+        }
+        return null;
     }
 
     public Vec2 screenToWorld(float x, float y) {
@@ -156,8 +150,6 @@ public class NodeCanvas extends Element {
 
     public void addNode(String type, String label, Color color) {
         Node node = new Node(type, label, -offset.x, -offset.y, color);
-        node.width = 400f;
-        node.height = 200f;
         nodes.add(node);
     }
 
@@ -200,6 +192,9 @@ public class NodeCanvas extends Element {
             Vec2 screenPos = worldToScreen(node.x, node.y);
             float screenWidth = node.width * zoom;
             float screenHeight = node.height * zoom;
+
+            Draw.color(node.color.r * 0.3f, node.color.g * 0.3f, node.color.b * 0.3f, 0.8f);
+            Fill.rect(screenPos.x + screenWidth/2f, screenPos.y + screenHeight/2f, screenWidth, screenHeight);
 
             Draw.color(node.color);
             Lines.stroke(8f);
