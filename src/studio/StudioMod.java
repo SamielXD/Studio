@@ -2,6 +2,8 @@ package studio;
 
 import arc.*;
 import arc.files.*;
+import arc.scene.ui.*;
+import arc.scene.ui.layout.*;
 import arc.struct.*;
 import arc.util.*;
 import arc.util.serialization.*;
@@ -64,7 +66,7 @@ public class StudioMod extends Mod {
     }
 
     void setupSettings() {
-        // Add Studio Settings (like your JS example!)
+        // Add Studio Settings
         Vars.ui.settings.addCategory("Studio", Icon.edit, table -> {
             
             // === DISPLAY SETTINGS ===
@@ -74,10 +76,10 @@ public class StudioMod extends Mod {
             table.table(t -> {
                 t.left();
                 t.add("Node Label Size: ").left();
-                Slider labelSlider = new Slider(0.8f, 2.0f, 0.1f, false);
+                arc.scene.ui.Slider labelSlider = new arc.scene.ui.Slider(0.8f, 2.0f, 0.1f, false);
                 labelSlider.setValue(Core.settings.getFloat("studio-label-scale", 1.2f));
                 t.add(labelSlider).width(200f).padLeft(10f);
-                arc.scene.ui.Label labelValue = new arc.scene.ui.Label("" + labelSlider.getValue());
+                Label labelValue = new Label("" + labelSlider.getValue());
                 t.add(labelValue).padLeft(10f);
                 
                 labelSlider.changed(() -> {
@@ -91,10 +93,10 @@ public class StudioMod extends Mod {
             table.table(t -> {
                 t.left();
                 t.add("Node Value Size: ").left();
-                Slider valueSlider = new Slider(0.6f, 1.5f, 0.1f, false);
+                arc.scene.ui.Slider valueSlider = new arc.scene.ui.Slider(0.6f, 1.5f, 0.1f, false);
                 valueSlider.setValue(Core.settings.getFloat("studio-value-scale", 1.0f));
                 t.add(valueSlider).width(200f).padLeft(10f);
-                arc.scene.ui.Label valueLabel = new arc.scene.ui.Label("" + valueSlider.getValue());
+                Label valueLabel = new Label("" + valueSlider.getValue());
                 t.add(valueLabel).padLeft(10f);
                 
                 valueSlider.changed(() -> {
@@ -121,7 +123,7 @@ public class StudioMod extends Mod {
             // === SCRIPT INFO ===
             table.add("[accent]═══ Script Info ═══").padTop(20).row();
             
-            arc.scene.ui.Label scriptCountLabel = new arc.scene.ui.Label("Loading...");
+            Label scriptCountLabel = new Label("Loading...");
             scriptCountLabel.setFontScale(1.2f);
             table.add(scriptCountLabel).padTop(10).row();
             
@@ -297,7 +299,7 @@ public class StudioMod extends Mod {
         }
         else if(label.contains("spawn unit")) {
             try {
-                // FIXED: Parse spawn options from node.value
+                // Parse spawn options from node.value
                 String[] parts = node.value.split("\\|");
                 String unitName = parts.length > 0 ? parts[0].toLowerCase().trim() : "dagger";
                 String location = parts.length > 1 ? parts[1].trim() : "core";
@@ -312,11 +314,10 @@ public class StudioMod extends Mod {
                     type = UnitTypes.dagger;
                 }
 
-                // Determine spawn position based on location setting
+                // Determine spawn position
                 float spawnX = 0f, spawnY = 0f;
                 
                 if(location.equals("core")) {
-                    // FIXED: Spawn at player's core
                     if(Vars.player != null && Vars.player.team() != null && Vars.player.team().core() != null) {
                         spawnX = Vars.player.team().core().x;
                         spawnY = Vars.player.team().core().y;
@@ -328,21 +329,19 @@ public class StudioMod extends Mod {
                     }
                 }
                 else if(location.equals("player")) {
-                    // Spawn at player position
                     if(Vars.player != null && Vars.player.unit() != null) {
                         spawnX = Vars.player.x;
                         spawnY = Vars.player.y;
                         Log.info("Spawning at PLAYER: " + spawnX + ", " + spawnY);
                     } else {
                         Log.warn("Player not found, using core");
-                        if(Vars.player.team().core() != null) {
+                        if(Vars.player != null && Vars.player.team() != null && Vars.player.team().core() != null) {
                             spawnX = Vars.player.team().core().x;
                             spawnY = Vars.player.team().core().y;
                         }
                     }
                 }
                 else if(location.equals("coordinates")) {
-                    // Use custom coordinates (tile coordinates * 8)
                     spawnX = customX * 8f;
                     spawnY = customY * 8f;
                     Log.info("Spawning at COORDINATES: " + spawnX + ", " + spawnY);
@@ -350,7 +349,6 @@ public class StudioMod extends Mod {
 
                 // Spawn multiple units
                 for(int i = 0; i < amount; i++) {
-                    // Add slight randomization to prevent stacking
                     float offsetX = (float)(Math.random() * 16f - 8f);
                     float offsetY = (float)(Math.random() * 16f - 8f);
                     
