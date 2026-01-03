@@ -39,13 +39,19 @@ public class Node {
         }
         else if(label.equals("Spawn Unit")) {
             inputs.add(new NodeInput("Unit Type", "dagger"));
-            inputs.add(new NodeInput("Spawn Location", "core")); // NEW: spawn location
-            inputs.add(new NodeInput("X Coordinate", "0")); // NEW: X position
-            inputs.add(new NodeInput("Y Coordinate", "0")); // NEW: Y position
-            inputs.add(new NodeInput("Amount", "1")); // NEW: how many to spawn
+            inputs.add(new NodeInput("Spawn Location", "core"));
+            inputs.add(new NodeInput("X Coordinate", "0"));
+            inputs.add(new NodeInput("Y Coordinate", "0"));
+            inputs.add(new NodeInput("Amount", "1"));
         }
         else if(label.equals("Set Block")) {
             inputs.add(new NodeInput("Position (x,y,blockname)", "10,10,copper-wall"));
+        }
+        else if(label.equals("Create Mod Folder")) {
+            inputs.add(new NodeInput("Folder Name", "mymod"));
+            inputs.add(new NodeInput("Display Name", "My Mod"));
+            inputs.add(new NodeInput("Author", "YourName"));
+            inputs.add(new NodeInput("Description", "My custom mod"));
         }
         else if(label.equals("Wait")) {
             inputs.add(new NodeInput("Seconds", "1"));
