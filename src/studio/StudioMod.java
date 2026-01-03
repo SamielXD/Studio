@@ -2,7 +2,6 @@ package studio;
 
 import arc.*;
 import arc.files.*;
-import arc.scene.ui.*;
 import arc.struct.*;
 import arc.util.*;
 import mindustry.*;
@@ -11,26 +10,30 @@ import mindustry.game.EventType.*;
 import mindustry.gen.*;
 import mindustry.mod.*;
 import mindustry.type.*;
-import mindustry.ui.*;
-import mindustry.ui.dialogs.*;
 import mindustry.world.*;
 
 public class StudioMod extends Mod {
     public static Seq<Script> loadedScripts = new Seq<>();
     public static Fi scriptsFolder;
     
+    private NodeEditor nodeEditor;
+    
     public StudioMod() {
+        Log.info("Studio - Visual Scripting System loading...");
+    }
+    
+    @Override
+    public void init() {
+        Log.info("Studio initializing...");
+        
         scriptsFolder = Core.files.local("mods/studio-scripts/");
         scriptsFolder.mkdirs();
         
+        nodeEditor = new NodeEditor();
+        
         Events.on(ClientLoadEvent.class, e -> {
-            Time.runTask(10f, () -> {
-                Vars.ui.menufrag.addButton("Studio", Icon.edit, () -> {
-                    new NodeEditor().show();
-                });
-                
-                loadAllScripts();
-            });
+            setupUI();
+            loadAllScripts();
         });
         
         Events.on(WorldLoadEvent.class, e -> {
@@ -44,6 +47,14 @@ public class StudioMod extends Mod {
         Events.on(UnitCreateEvent.class, e -> {
             executeEventScripts("unitspawn");
         });
+        
+        Log.info("Studio loaded successfully!");
+    }
+    
+    void setupUI() {
+        Vars.ui.menufrag.addButton("Studio", Icon.edit, () -> {
+            nodeEditor.show();
+        });
     }
     
     public static void loadAllScripts() {
@@ -52,7 +63,6 @@ public class StudioMod extends Mod {
         for(Fi file : scriptsFolder.list()) {
             if(file.extension().equals("json")) {
                 try {
-                    String json = file.readString();
                     Script script = new Script();
                     script.fileName = file.name();
                     loadedScripts.add(script);
