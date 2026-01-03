@@ -66,10 +66,8 @@ public class StudioMod extends Mod {
     }
 
     void setupSettings() {
-        // Add Studio Settings
         Vars.ui.settings.addCategory("Studio", Icon.edit, table -> {
             
-            // === DISPLAY SETTINGS ===
             table.add("[accent]═══ Display Settings ═══").padTop(10).row();
             
             // Node Label Size
@@ -83,9 +81,10 @@ public class StudioMod extends Mod {
                 t.add(labelValue).padLeft(10f);
                 
                 labelSlider.changed(() -> {
-                    Core.settings.put("studio-label-scale", labelSlider.getValue());
-                    labelValue.setText(String.format("%.1f", labelSlider.getValue()));
-                    NodeCanvas.nodeLabelScale = labelSlider.getValue();
+                    float newValue = labelSlider.getValue();
+                    Core.settings.put("studio-label-scale", newValue);
+                    labelValue.setText(String.format("%.1f", newValue));
+                    NodeCanvas.nodeLabelScale = newValue;
                 });
             }).left().row();
             
@@ -100,34 +99,30 @@ public class StudioMod extends Mod {
                 t.add(valueLabel).padLeft(10f);
                 
                 valueSlider.changed(() -> {
-                    Core.settings.put("studio-value-scale", valueSlider.getValue());
-                    valueLabel.setText(String.format("%.1f", valueSlider.getValue()));
-                    NodeCanvas.nodeValueScale = valueSlider.getValue();
+                    float newValue = valueSlider.getValue();
+                    Core.settings.put("studio-value-scale", newValue);
+                    valueLabel.setText(String.format("%.1f", newValue));
+                    NodeCanvas.nodeValueScale = newValue;
                 });
             }).left().row();
             
-            // === ACTIONS ===
             table.add("[accent]═══ Actions ═══").padTop(20).row();
             
-            // Open Studio Button
             table.button("[cyan]Open Studio Editor", Icon.edit, () -> {
                 nodeEditor.show();
             }).size(300f, 60f).padTop(10).row();
             
-            // Reload Scripts Button
             table.button("[lime]Reload All Scripts", Icon.refresh, () -> {
                 loadAllScripts();
                 Vars.ui.showInfoFade("[lime]Reloaded " + loadedScripts.size + " scripts!");
             }).size(300f, 60f).padTop(5).row();
             
-            // === SCRIPT INFO ===
             table.add("[accent]═══ Script Info ═══").padTop(20).row();
             
             Label scriptCountLabel = new Label("Loading...");
             scriptCountLabel.setFontScale(1.2f);
             table.add(scriptCountLabel).padTop(10).row();
             
-            // Update script count
             Timer.schedule(() -> {
                 int count = loadedScripts.size;
                 int nodeCount = 0;
@@ -137,7 +132,6 @@ public class StudioMod extends Mod {
                 scriptCountLabel.setText("[cyan]" + count + " scripts loaded\n[lightgray]" + nodeCount + " total nodes");
             }, 0.5f);
             
-            // === HELP ===
             table.add("[accent]═══ Help ═══").padTop(20).row();
             
             table.button("[royal]Open Tutorial", Icon.book, () -> {
@@ -162,7 +156,6 @@ public class StudioMod extends Mod {
                 );
             }).size(300f, 60f).padTop(10).row();
             
-            // Clear All Scripts Button
             table.button("[scarlet]Delete All Scripts", Icon.trash, () -> {
                 Vars.ui.showConfirm("Delete All Scripts?", 
                     "This will delete all " + loadedScripts.size + " saved scripts!\nThis cannot be undone!", 
@@ -187,7 +180,9 @@ public class StudioMod extends Mod {
             if(file.extension().equals("json")) {
                 try {
                     String json = file.readString();
-                    Seq<NodeEditor.NodeData> nodeDataList = new Json().fromJson(Seq.class, NodeEditor.NodeData.class, json);
+                    Json jsonParser = new Json();
+                    jsonParser.setIgnoreUnknownFields(true);
+                    Seq<NodeEditor.NodeData> nodeDataList = jsonParser.fromJson(Seq.class, NodeEditor.NodeData.class, json);
 
                     Script script = new Script();
                     script.fileName = file.name();
@@ -204,10 +199,9 @@ public class StudioMod extends Mod {
                         node.label = data.label;
                         node.x = data.x;
                         node.y = data.y;
-                        node.value = data.value;
+                        node.value = data.value != null ? data.value : "";
                         node.setupInputs();
                         
-                        // Restore input values
                         if(data.inputValues != null && data.inputValues.size > 0) {
                             for(int i = 0; i < Math.min(node.inputs.size, data.inputValues.size); i++) {
                                 node.inputs.get(i).value = data.inputValues.get(i);
@@ -297,9 +291,37 @@ public class StudioMod extends Mod {
             String message = node.value.isEmpty() ? "Hello from Studio!" : node.value;
             Vars.ui.showInfoFade(message);
         }
+        else if(label.contains("create mod folder")) {
+            try {
+                String[] parts = node.value.split("\\|");
+                String folderName = parts.length > 0 ? parts[0].trim() : "mymod";
+                String displayName = parts.length > 1 ? parts[1].trim() : "My Mod";
+                String author = parts.length > 2 ? parts[2].trim() : "Unknown";
+                String description = parts.length > 3 ? parts[3].trim() : "A custom mod";
+
+                Fi modFolder = Core.files.local("mods/" + folderName);
+                modFolder.mkdirs();
+
+                String hjson = 
+                    "name: \"" + folderName + "\"\n" +
+                    "displayName: \"" + displayName + "\"\n" +
+                    "author: \"" + author + "\"\n" +
+                    "description: \"" + description + "\"\n" +
+                    "version: \"1.0\"\n" +
+                    "minGameVersion: \"146\"\n" +
+                    "hidden: false\n";
+
+                modFolder.child("mod.hjson").writeString(hjson);
+
+                Log.info("Created mod folder: " + folderName);
+                Vars.ui.showInfoFade("Created mod: " + displayName + "\nFolder: mods/" + folderName);
+            } catch(Exception e) {
+                Log.err("Create mod failed", e);
+                Vars.ui.showInfoFade("Failed to create mod: " + e.getMessage());
+            }
+        }
         else if(label.contains("spawn unit")) {
             try {
-                // Parse spawn options from node.value
                 String[] parts = node.value.split("\\|");
                 String unitName = parts.length > 0 ? parts[0].toLowerCase().trim() : "dagger";
                 String location = parts.length > 1 ? parts[1].trim() : "core";
@@ -307,14 +329,12 @@ public class StudioMod extends Mod {
                 float customY = parts.length > 3 ? Float.parseFloat(parts[3].trim()) : 0f;
                 int amount = parts.length > 4 ? Integer.parseInt(parts[4].trim()) : 1;
 
-                // Find unit type
                 UnitType type = Vars.content.units().find(u -> u.name.equals(unitName));
                 if(type == null) {
                     Log.warn("Unit not found: " + unitName);
                     type = UnitTypes.dagger;
                 }
 
-                // Determine spawn position
                 float spawnX = 0f, spawnY = 0f;
                 
                 if(location.equals("core")) {
@@ -347,7 +367,6 @@ public class StudioMod extends Mod {
                     Log.info("Spawning at COORDINATES: " + spawnX + ", " + spawnY);
                 }
 
-                // Spawn multiple units
                 for(int i = 0; i < amount; i++) {
                     float offsetX = (float)(Math.random() * 16f - 8f);
                     float offsetY = (float)(Math.random() * 16f - 8f);
