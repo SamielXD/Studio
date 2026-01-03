@@ -23,7 +23,9 @@ public class NodeEditor extends BaseDialog {
         canvas = new NodeCanvas();
         canvas.onNodeEdit = () -> showEditDialog(canvas.selectedNode);
         
-        if(Core.graphics.isPortrait()) {
+        boolean isMobile = Core.graphics.isPortrait() || Vars.mobile;
+        
+        if(isMobile) {
             buildMobile();
         } else {
             buildDesktop();
@@ -85,24 +87,21 @@ public class NodeEditor extends BaseDialog {
         main.setFillParent(true);
         
         Table topBar = new Table(Styles.black6);
-        topBar.defaults().size(70f, 50f).pad(3f);
-        topBar.button("Move", () -> canvas.mode = "move");
-        topBar.button("Edit", () -> canvas.mode = "edit");
-        topBar.button("Connect", () -> canvas.mode = "connect");
-        topBar.button("Delete", () -> canvas.mode = "delete");
-        topBar.button("Add", () -> showAddNodeDialog());
-        topBar.button("Zoom-", () -> {
-            canvas.zoom = arc.math.Mathf.clamp(canvas.zoom - 0.2f, 0.2f, 3f);
-        });
-        topBar.button("Zoom+", () -> {
-            canvas.zoom = arc.math.Mathf.clamp(canvas.zoom + 0.2f, 0.2f, 3f);
-        });
+        topBar.defaults().size(60f, 45f).pad(2f);
         
-        main.add(topBar).fillX().row();
+        topBar.button("Move", () -> canvas.mode = "move").row();
+        topBar.button("Edit", () -> canvas.mode = "edit").row();
+        topBar.button("Link", () -> canvas.mode = "connect").row();
+        topBar.button("Del", () -> canvas.mode = "delete").row();
+        topBar.button("+Node", () -> showAddNodeDialog()).row();
+        topBar.button("Z-", () -> canvas.zoom = arc.math.Mathf.clamp(canvas.zoom - 0.2f, 0.2f, 3f)).row();
+        topBar.button("Z+", () -> canvas.zoom = arc.math.Mathf.clamp(canvas.zoom + 0.2f, 0.2f, 3f)).row();
+        
+        main.add(topBar).fillY().left();
         main.add(canvas).grow().row();
         
         statusLabel = new Label("");
-        main.add(statusLabel).fillX().pad(5f);
+        main.add(statusLabel).colspan(2).fillX().pad(5f);
         
         cont.add(main).grow();
     }
