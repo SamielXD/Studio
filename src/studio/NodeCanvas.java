@@ -121,12 +121,12 @@ public class NodeCanvas extends Element {
             
             @Override
             public boolean scrolled(InputEvent event, float x, float y, float amountX, float amountY) {
-                float prevZoom = zoom;
-                zoom = arc.math.Mathf.clamp(zoom - amountY * 0.1f, 0.3f, 2f);
+                Vec2 worldPosBefore = screenToWorld(x, y);
                 
-                Vec2 mouseWorld = screenToWorld(x, y);
-                Vec2 mouseWorldAfter = screenToWorld(x, y);
-                offset.add(mouseWorld).sub(mouseWorldAfter);
+                zoom = arc.math.Mathf.clamp(zoom - amountY * 0.15f, 0.2f, 3f);
+                
+                Vec2 worldPosAfter = screenToWorld(x, y);
+                offset.add(worldPosBefore).sub(worldPosAfter);
                 
                 return true;
             }
@@ -156,21 +156,24 @@ public class NodeCanvas extends Element {
     public void draw() {
         validate();
         
-        Draw.color(Color.darkGray);
-        Fill.crect(x, y, width, height);
+        Draw.color(0.2f, 0.2f, 0.25f, 1f);
+        Fill.rect(x + width/2f, y + height/2f, width, height);
         
         Lines.stroke(1f);
-        for(float gx = -1000f; gx < 1000f; gx += 50f) {
-            Vec2 start = worldToScreen(gx, -1000f);
-            Vec2 end = worldToScreen(gx, 1000f);
-            Draw.color(0.3f, 0.3f, 0.3f, 0.5f);
-            Lines.line(start.x, start.y, end.x, end.y);
+        Draw.color(0.3f, 0.3f, 0.35f, 1f);
+        for(float gx = -2000f; gx < 2000f; gx += 50f) {
+            Vec2 start = worldToScreen(gx, -2000f);
+            Vec2 end = worldToScreen(gx, 2000f);
+            if(start.x >= x && start.x <= x + width) {
+                Lines.line(start.x, y, start.x, y + height);
+            }
         }
-        for(float gy = -1000f; gy < 1000f; gy += 50f) {
-            Vec2 start = worldToScreen(-1000f, gy);
-            Vec2 end = worldToScreen(1000f, gy);
-            Draw.color(0.3f, 0.3f, 0.3f, 0.5f);
-            Lines.line(start.x, start.y, end.x, end.y);
+        for(float gy = -2000f; gy < 2000f; gy += 50f) {
+            Vec2 start = worldToScreen(-2000f, gy);
+            Vec2 end = worldToScreen(2000f, gy);
+            if(start.y >= y && start.y <= y + height) {
+                Lines.line(x, start.y, x + width, start.y);
+            }
         }
         
         for(Node node : nodes) {
