@@ -21,6 +21,8 @@ import mindustry.ui.dialogs.*;
 public class StudioMod extends Mod {
     public static Seq<Script> loadedScripts = new Seq<>();
     public static Fi scriptsFolder;
+    public static Fi modsRootFolder;
+    public static String currentModName = "studio-temp";
 
     private NodeEditor nodeEditor;
 
@@ -32,8 +34,11 @@ public class StudioMod extends Mod {
     public void init() {
         Log.info("Studio initializing...");
 
-        scriptsFolder = Core.files.local("mods/studio-scripts/");
+        scriptsFolder = Vars.modDirectory.child("studio-scripts");
         scriptsFolder.mkdirs();
+        
+        modsRootFolder = Vars.modDirectory;
+        Log.info("Mods folder: " + modsRootFolder.absolutePath());
 
         nodeEditor = new NodeEditor();
 
@@ -56,6 +61,7 @@ public class StudioMod extends Mod {
         });
 
         Log.info("Studio loaded successfully!");
+        Log.info("Real mods path: " + modsRootFolder.absolutePath());
     }
 
     void setupUI() {
@@ -66,7 +72,46 @@ public class StudioMod extends Mod {
 
     void setupSettings() {
         Vars.ui.settings.addCategory("Studio", Icon.edit, table -> {
-            table.add("[accent]═══ Studio Settings ═══").padTop(10).row();
+            table.add("[accent]═══ Studio Visual Scripting ═══").padTop(10).row();
+            
+            table.table(t -> {
+                t.left();
+                t.add("Button Layout:").left().padRight(10);
+                t.button(Core.settings.getString("studio-ui-layout", "bottom"), () -> {
+                    String current = Core.settings.getString("studio-ui-layout", "bottom");
+                    String newLayout = current.equals("bottom") ? "top" : "bottom";
+                    Core.settings.put("studio-ui-layout", newLayout);
+                    Vars.ui.showInfoFade("Restart editor to apply: " + newLayout);
+                }).size(200f, 50f);
+            }).row();
+            
+            table.table(t -> {
+                t.left();
+                t.add("Auto-save:").left().padRight(10);
+                t.check("", Core.settings.getBool("studio-autosave", false), val -> {
+                    Core.settings.put("studio-autosave", val);
+                }).size(50f);
+            }).padTop(10).row();
+            
+            table.table(t -> {
+                t.left();
+                t.add("Grid Size:").left().padRight(10);
+                t.slider(20, 100, 10, Core.settings.getInt("studio-grid-size", 50), val -> {
+                    Core.settings.put("studio-grid-size", (int)val);
+                }).width(200f);
+            }).padTop(10).row();
+            
+            table.table(t -> {
+                t.left();
+                t.add("Mods Folder:").left().padRight(10);
+                t.add("[lightgray]" + modsRootFolder.absolutePath()).left();
+            }).padTop(10).row();
+            
+            table.button("Open Mods Folder", Icon.folder, () -> {
+                Vars.ui.showInfoText("Mods Folder Location", 
+                    "Your mods are stored at:\n" + modsRootFolder.absolutePath() + 
+                    "\n\nOn Android:\n/data/io.anuke.mindustry/files/mods");
+            }).size(300f, 60f).padTop(20);
         });
     }
 
@@ -133,9 +178,8 @@ public class StudioMod extends Mod {
         dialog.cont.defaults().size(500f, 100f).pad(10f);
 
         Seq<Fi> mods = new Seq<>();
-        Fi modsFolder = Core.files.local("mods/");
-        for(Fi folder : modsFolder.list()) {
-            if(folder.isDirectory() && folder.child("mod.hjson").exists()) {
+        for(Fi folder : modsRootFolder.list()) {
+            if(folder.isDirectory() && (folder.child("mod.hjson").exists() || folder.child("mod.json").exists())) {
                 mods.add(folder);
             }
         }
@@ -147,13 +191,10 @@ public class StudioMod extends Mod {
         } else {
             for(Fi modFolder : mods) {
                 String modName = modFolder.name();
-                dialog.cont.button("[cyan]" + modName + "\n[lightgray]" + modFolder.path(), () -> {
-                    Vars.ui.showInfoText("Mod: " + modName, 
-                        "Location: " + modFolder.path() + "\n\n" +
-                        "To edit this mod:\n" +
-                        "1. Open Studio Script Editor\n" +
-                        "2. Add mod editing nodes\n" +
-                        "3. Save and run your script");
+                dialog.cont.button("[cyan]" + modName + "\n[lightgray]Tap to select", () -> {
+                    currentModName = modName;
+                    Vars.ui.showInfoFade("Selected mod: " + modName);
+                    dialog.hide();
                 }).row();
             }
         }
@@ -168,7 +209,7 @@ public class StudioMod extends Mod {
         Node event = new Node("event", "On Start", 0f, 0f, Color.green);
         Node action = new Node("action", "Message", 500f, 0f, Color.blue);
         action.value = "Hello from Studio!";
-        action.inputs.get(0).value = "Hello from Studio!";
+        if(action.inputs.size > 0) action.inputs.get(0).value = "Hello from Studio!";
 
         event.connections.add(action);
 
@@ -184,9 +225,11 @@ public class StudioMod extends Mod {
         Node event = new Node("event", "On Wave", 0f, 0f, Color.green);
         Node action = new Node("action", "Spawn Unit", 500f, 0f, Color.blue);
         action.value = "dagger|core|0|0|3";
-        action.inputs.get(0).value = "dagger";
-        action.inputs.get(1).value = "core";
-        action.inputs.get(4).value = "3";
+        if(action.inputs.size >= 5) {
+            action.inputs.get(0).value = "dagger";
+            action.inputs.get(1).value = "core";
+            action.inputs.get(4).value = "3";
+        }
 
         event.connections.add(action);
 
@@ -202,10 +245,10 @@ public class StudioMod extends Mod {
         Node event = new Node("event", "On Start", 0f, 0f, Color.green);
         Node wait = new Node("condition", "Wait", 500f, 0f, Color.orange);
         wait.value = "2";
-        wait.inputs.get(0).value = "2";
+        if(wait.inputs.size > 0) wait.inputs.get(0).value = "2";
         Node action = new Node("action", "Message", 1000f, 0f, Color.blue);
         action.value = "Welcome to this map!";
-        action.inputs.get(0).value = "Welcome to this map!";
+        if(action.inputs.size > 0) action.inputs.get(0).value = "Welcome to this map!";
 
         event.connections.add(wait);
         wait.connections.add(action);
@@ -219,6 +262,8 @@ public class StudioMod extends Mod {
 
     public static void loadAllScripts() {
         loadedScripts.clear();
+
+        if(!scriptsFolder.exists()) return;
 
         for(Fi file : scriptsFolder.list()) {
             if(file.extension().equals("json")) {
@@ -288,7 +333,9 @@ public class StudioMod extends Mod {
         }
         else if(label.contains("spawn unit")) {
             try {
-                String unitName = node.value.isEmpty() ? "dagger" : node.value.toLowerCase();
+                String[] parts = node.value.split("\\|");
+                String unitName = parts.length > 0 ? parts[0] : "dagger";
+                
                 UnitType type = Vars.content.units().find(u -> u.name.equals(unitName));
                 if(type == null) type = UnitTypes.dagger;
 
@@ -322,14 +369,13 @@ public class StudioMod extends Mod {
         String label = node.label.toLowerCase();
 
         try {
+            Fi modFolder = modsRootFolder.child(currentModName);
+            
             if(label.contains("create mod")) {
                 String modName = node.inputs.get(0).value;
-                String displayName = node.inputs.get(1).value;
-                String author = node.inputs.get(2).value;
-                String description = node.inputs.get(3).value;
-                String version = node.inputs.get(4).value;
-
-                Fi modFolder = Core.files.local("mods/" + modName + "/");
+                currentModName = modName;
+                modFolder = modsRootFolder.child(modName);
+                
                 modFolder.mkdirs();
                 modFolder.child("scripts").mkdirs();
                 modFolder.child("content").mkdirs();
@@ -337,6 +383,11 @@ public class StudioMod extends Mod {
                 modFolder.child("content/units").mkdirs();
                 modFolder.child("content/items").mkdirs();
                 modFolder.child("sprites").mkdirs();
+
+                String displayName = node.inputs.get(1).value;
+                String author = node.inputs.get(2).value;
+                String description = node.inputs.get(3).value;
+                String version = node.inputs.get(4).value;
 
                 String modHjson = "name: \"" + modName + "\"\n" +
                                 "displayName: \"" + displayName + "\"\n" +
@@ -346,7 +397,8 @@ public class StudioMod extends Mod {
                                 "minGameVersion: \"146\"\n";
 
                 modFolder.child("mod.hjson").writeString(modHjson);
-                Vars.ui.showInfoFade("Created mod: " + modName);
+                Vars.ui.showInfoFade("Created mod at: " + modFolder.absolutePath());
+                Log.info("Mod created: " + modFolder.absolutePath());
             }
             else if(label.contains("create block")) {
                 String blockName = node.inputs.get(0).value;
@@ -363,7 +415,7 @@ public class StudioMod extends Mod {
                                  "  \"size\": " + size + "\n" +
                                  "}\n";
 
-                Core.files.local("mods/studio-temp/content/blocks/" + blockName + ".json").writeString(blockJson);
+                modFolder.child("content/blocks/" + blockName + ".json").writeString(blockJson);
                 Vars.ui.showInfoFade("Created block: " + blockName);
             }
             else if(label.contains("create unit")) {
@@ -382,7 +434,7 @@ public class StudioMod extends Mod {
                                 "  \"flying\": " + flying + "\n" +
                                 "}\n";
 
-                Core.files.local("mods/studio-temp/content/units/" + unitName + ".json").writeString(unitJson);
+                modFolder.child("content/units/" + unitName + ".json").writeString(unitJson);
                 Vars.ui.showInfoFade("Created unit: " + unitName);
             }
             else if(label.contains("create item")) {
@@ -397,23 +449,23 @@ public class StudioMod extends Mod {
                                 "  \"color\": \"" + color + "\"\n" +
                                 "}\n";
 
-                Core.files.local("mods/studio-temp/content/items/" + itemName + ".json").writeString(itemJson);
+                modFolder.child("content/items/" + itemName + ".json").writeString(itemJson);
                 Vars.ui.showInfoFade("Created item: " + itemName);
             }
             else if(label.contains("add sprite")) {
                 String spriteName = node.inputs.get(0).value;
                 String filePath = node.inputs.get(1).value;
-                Vars.ui.showInfoFade("Sprite node: " + spriteName + " (copy " + filePath + " manually)");
+                Vars.ui.showInfoFade("Sprite: " + spriteName + " - Copy " + filePath + " to: " + modFolder.child("sprites").absolutePath());
             }
             else if(label.contains("create script")) {
                 String scriptName = node.inputs.get(0).value;
                 String scriptContent = node.inputs.get(1).value;
 
-                Core.files.local("mods/studio-temp/scripts/" + scriptName).writeString(scriptContent);
+                modFolder.child("scripts/" + scriptName).writeString(scriptContent);
                 Vars.ui.showInfoFade("Created script: " + scriptName);
             }
         } catch(Exception e) {
-            Log.err("Mod node execution failed", e);
+            Log.err("Mod node failed", e);
             Vars.ui.showInfoFade("Error: " + e.getMessage());
         }
     }
