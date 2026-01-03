@@ -141,7 +141,7 @@ public class StudioMod extends Mod {
         }
 
         if(mods.size == 0) {
-            Label label = new Label("[lightgray]No mods created yet\nUse 'Create Mod Folder' node");
+            Label label = new Label("[lightgray]No mods created yet\nUse 'Create Mod' node");
             label.setFontScale(1.3f);
             dialog.cont.add(label).row();
         } else {
@@ -315,6 +315,106 @@ public class StudioMod extends Mod {
             } catch(Exception e) {
                 Log.err("Failed to set block", e);
             }
+        }
+    }
+
+    public static void executeModNode(Node node) {
+        String label = node.label.toLowerCase();
+
+        try {
+            if(label.contains("create mod")) {
+                String modName = node.inputs.get(0).value;
+                String displayName = node.inputs.get(1).value;
+                String author = node.inputs.get(2).value;
+                String description = node.inputs.get(3).value;
+                String version = node.inputs.get(4).value;
+
+                Fi modFolder = Core.files.local("mods/" + modName + "/");
+                modFolder.mkdirs();
+                modFolder.child("scripts").mkdirs();
+                modFolder.child("content").mkdirs();
+                modFolder.child("content/blocks").mkdirs();
+                modFolder.child("content/units").mkdirs();
+                modFolder.child("content/items").mkdirs();
+                modFolder.child("sprites").mkdirs();
+
+                String modHjson = "name: \"" + modName + "\"\n" +
+                                "displayName: \"" + displayName + "\"\n" +
+                                "author: \"" + author + "\"\n" +
+                                "description: \"" + description + "\"\n" +
+                                "version: \"" + version + "\"\n" +
+                                "minGameVersion: \"146\"\n";
+
+                modFolder.child("mod.hjson").writeString(modHjson);
+                Vars.ui.showInfoFade("Created mod: " + modName);
+            }
+            else if(label.contains("create block")) {
+                String blockName = node.inputs.get(0).value;
+                String displayName = node.inputs.get(1).value;
+                String blockType = node.inputs.get(2).value;
+                String health = node.inputs.get(3).value;
+                String size = node.inputs.get(4).value;
+
+                String blockJson = "{\n" +
+                                 "  \"type\": \"" + blockType + "\",\n" +
+                                 "  \"name\": \"" + blockName + "\",\n" +
+                                 "  \"description\": \"" + displayName + "\",\n" +
+                                 "  \"health\": " + health + ",\n" +
+                                 "  \"size\": " + size + "\n" +
+                                 "}\n";
+
+                Core.files.local("mods/studio-temp/content/blocks/" + blockName + ".json").writeString(blockJson);
+                Vars.ui.showInfoFade("Created block: " + blockName);
+            }
+            else if(label.contains("create unit")) {
+                String unitName = node.inputs.get(0).value;
+                String displayName = node.inputs.get(1).value;
+                String speed = node.inputs.get(2).value;
+                String health = node.inputs.get(3).value;
+                String flying = node.inputs.get(4).value;
+
+                String unitJson = "{\n" +
+                                "  \"type\": \"flying\",\n" +
+                                "  \"name\": \"" + unitName + "\",\n" +
+                                "  \"description\": \"" + displayName + "\",\n" +
+                                "  \"speed\": " + speed + ",\n" +
+                                "  \"health\": " + health + ",\n" +
+                                "  \"flying\": " + flying + "\n" +
+                                "}\n";
+
+                Core.files.local("mods/studio-temp/content/units/" + unitName + ".json").writeString(unitJson);
+                Vars.ui.showInfoFade("Created unit: " + unitName);
+            }
+            else if(label.contains("create item")) {
+                String itemName = node.inputs.get(0).value;
+                String displayName = node.inputs.get(1).value;
+                String color = node.inputs.get(2).value;
+
+                String itemJson = "{\n" +
+                                "  \"type\": \"resource\",\n" +
+                                "  \"name\": \"" + itemName + "\",\n" +
+                                "  \"description\": \"" + displayName + "\",\n" +
+                                "  \"color\": \"" + color + "\"\n" +
+                                "}\n";
+
+                Core.files.local("mods/studio-temp/content/items/" + itemName + ".json").writeString(itemJson);
+                Vars.ui.showInfoFade("Created item: " + itemName);
+            }
+            else if(label.contains("add sprite")) {
+                String spriteName = node.inputs.get(0).value;
+                String filePath = node.inputs.get(1).value;
+                Vars.ui.showInfoFade("Sprite node: " + spriteName + " (copy " + filePath + " manually)");
+            }
+            else if(label.contains("create script")) {
+                String scriptName = node.inputs.get(0).value;
+                String scriptContent = node.inputs.get(1).value;
+
+                Core.files.local("mods/studio-temp/scripts/" + scriptName).writeString(scriptContent);
+                Vars.ui.showInfoFade("Created script: " + scriptName);
+            }
+        } catch(Exception e) {
+            Log.err("Mod node execution failed", e);
+            Vars.ui.showInfoFade("Error: " + e.getMessage());
         }
     }
 
