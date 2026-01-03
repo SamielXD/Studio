@@ -39,47 +39,54 @@ public class Node {
         }
         else if(label.equals("Spawn Unit")) {
             inputs.add(new NodeInput("Unit Type", "dagger"));
-            inputs.add(new NodeInput("Spawn Location", "core"));
-            inputs.add(new NodeInput("X Coordinate", "0"));
-            inputs.add(new NodeInput("Y Coordinate", "0"));
             inputs.add(new NodeInput("Amount", "1"));
         }
         else if(label.equals("Set Block")) {
-            inputs.add(new NodeInput("Position (x,y,blockname)", "10,10,copper-wall"));
+            inputs.add(new NodeInput("X", "10"));
+            inputs.add(new NodeInput("Y", "10"));
+            inputs.add(new NodeInput("Block", "copper-wall"));
         }
-        else if(label.equals("Create Mod")) {
+        else if(label.equals("Create Mod Folder")) {
             inputs.add(new NodeInput("Mod Name", "mymod"));
             inputs.add(new NodeInput("Display Name", "My Mod"));
             inputs.add(new NodeInput("Author", "YourName"));
-            inputs.add(new NodeInput("Description", "My custom mod"));
+            inputs.add(new NodeInput("Description", "Custom mod"));
             inputs.add(new NodeInput("Version", "1.0"));
         }
-        else if(label.equals("Create Block")) {
-            inputs.add(new NodeInput("Block Name", "my-block"));
-            inputs.add(new NodeInput("Display Name", "My Block"));
-            inputs.add(new NodeInput("Block Type", "wall"));
-            inputs.add(new NodeInput("Health", "100"));
+        else if(label.equals("Create Folder")) {
+            inputs.add(new NodeInput("Folder Name", "content"));
+        }
+        else if(label.equals("Create Block File")) {
+            inputs.add(new NodeInput("Block Name", "my-wall"));
+            inputs.add(new NodeInput("Type", "Wall"));
+            inputs.add(new NodeInput("Health", "500"));
             inputs.add(new NodeInput("Size", "1"));
         }
-        else if(label.equals("Create Unit")) {
-            inputs.add(new NodeInput("Unit Name", "my-unit"));
-            inputs.add(new NodeInput("Display Name", "My Unit"));
-            inputs.add(new NodeInput("Speed", "1.0"));
+        else if(label.equals("Create Unit File")) {
+            inputs.add(new NodeInput("Unit Name", "my-mech"));
+            inputs.add(new NodeInput("Type", "mech"));
             inputs.add(new NodeInput("Health", "200"));
-            inputs.add(new NodeInput("Flying", "false"));
+            inputs.add(new NodeInput("Speed", "0.5"));
         }
-        else if(label.equals("Create Item")) {
-            inputs.add(new NodeInput("Item Name", "my-item"));
-            inputs.add(new NodeInput("Display Name", "My Item"));
-            inputs.add(new NodeInput("Color (hex)", "ff0000"));
+        else if(label.equals("Create Item File")) {
+            inputs.add(new NodeInput("Item Name", "my-resource"));
+            inputs.add(new NodeInput("Color", "ff0000"));
+            inputs.add(new NodeInput("Cost", "1.0"));
         }
         else if(label.equals("Add Sprite")) {
             inputs.add(new NodeInput("Sprite Name", "my-sprite"));
-            inputs.add(new NodeInput("File Path", "sprites/my-sprite.png"));
+            inputs.add(new NodeInput("Path", "sprites/blocks/my-sprite.png"));
         }
-        else if(label.equals("Create Script")) {
-            inputs.add(new NodeInput("Script Name", "main.js"));
-            inputs.add(new NodeInput("Script Content", "// Your code here"));
+        else if(label.equals("Create mod.hjson")) {
+            inputs.add(new NodeInput("Mod Name", "mymod"));
+            inputs.add(new NodeInput("Display Name", "My Mod"));
+            inputs.add(new NodeInput("Author", "YourName"));
+        }
+        else if(label.equals("Wait")) {
+            inputs.add(new NodeInput("Seconds", "1"));
+        }
+        else if(label.equals("If")) {
+            inputs.add(new NodeInput("Condition", "true"));
         }
         else if(label.equals("Set Variable")) {
             inputs.add(new NodeInput("Variable Name", "myVar"));
@@ -88,40 +95,8 @@ public class Node {
         else if(label.equals("Get Variable")) {
             inputs.add(new NodeInput("Variable Name", "myVar"));
         }
-        else if(label.equals("Math Operation")) {
-            inputs.add(new NodeInput("Operation (+,-,*,/)", "+"));
-            inputs.add(new NodeInput("Number A", "0"));
-            inputs.add(new NodeInput("Number B", "0"));
-        }
         else if(label.equals("Loop")) {
-            inputs.add(new NodeInput("Times", "10"));
-        }
-        else if(label.equals("Compare")) {
-            inputs.add(new NodeInput("Value A", "0"));
-            inputs.add(new NodeInput("Operator (==,!=,>,<)", "=="));
-            inputs.add(new NodeInput("Value B", "0"));
-        }
-        else if(label.equals("Log Message")) {
-            inputs.add(new NodeInput("Message", "Debug log"));
-        }
-        else if(label.equals("Random Number")) {
-            inputs.add(new NodeInput("Min", "0"));
-            inputs.add(new NodeInput("Max", "100"));
-        }
-        else if(label.equals("Wait")) {
-            inputs.add(new NodeInput("Seconds", "1"));
-        }
-        else if(label.equals("If")) {
-            inputs.add(new NodeInput("Condition", "true"));
-        }
-        else if(label.equals("Number")) {
-            inputs.add(new NodeInput("Value", "0"));
-        }
-        else if(label.equals("Text")) {
-            inputs.add(new NodeInput("Value", ""));
-        }
-        else if(label.equals("Unit Type")) {
-            inputs.add(new NodeInput("Unit Name", "dagger"));
+            inputs.add(new NodeInput("Count", "10"));
         }
         else if(label.equals("On Start")) {
             value = "On Start";
@@ -129,8 +104,8 @@ public class Node {
         else if(label.equals("On Wave")) {
             value = "On Wave";
         }
-        else if(label.equals("On Unit Spawn")) {
-            value = "On Unit Spawn";
+        else if(label.equals("On Build")) {
+            value = "On Build";
         }
     }
 
@@ -140,10 +115,6 @@ public class Node {
 
     public Vec2 getOutputPoint() {
         return new Vec2(x + width, y + height / 2);
-    }
-
-    public boolean contains(float worldX, float worldY) {
-        return worldX >= x && worldX <= x + width && worldY >= y && worldY <= y + height;
     }
 
     public static class NodeInput {
