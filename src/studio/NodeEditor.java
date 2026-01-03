@@ -177,7 +177,7 @@ public class NodeEditor extends BaseDialog {
         }
         dialog.buttons.button("DONE", dialog::hide).size(300f, 100f);
         dialog.show();
-    }private void saveScript() {
+    private void saveScript() {
         BaseDialog dialog = new BaseDialog("Save Script");
         Label label = new Label("Script Name:");
         label.setFontScale(1.5f);
@@ -299,7 +299,7 @@ public class NodeEditor extends BaseDialog {
             Vars.ui.showInfoFade("Load failed: " + e.getMessage());
             statusLabel.setText("Load FAILED!");
         }
-    }private void runScript() {
+    private void runScript() {
         try {
             boolean hasEventNode = false;
             for(Node node : canvas.nodes) {
