@@ -342,7 +342,6 @@ public class NodeEditor extends BaseDialog {
         }
 
         dialog.show();
-    }package studio;
 
 import arc.*;
 import arc.files.*;
