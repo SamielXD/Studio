@@ -29,6 +29,8 @@ public class NodeCanvas extends Element {
     public Runnable onNodeEdit;
     public Node selectedNode = null;
 
+    private static final float HIT_BOX_EXPAND = 50f;
+
     public NodeCanvas() {
         setFillParent(true);
 
@@ -45,7 +47,7 @@ public class NodeCanvas extends Element {
 
                 if(mode.equals("move")) {
                     for(Node node : nodes) {
-                        if(node.contains(worldPos.x, worldPos.y)) {
+                        if(isInHitBox(worldPos.x, worldPos.y, node)) {
                             dragNode = node;
                             dragStart.set(worldPos.x - node.x, worldPos.y - node.y);
                             return true;
@@ -55,7 +57,7 @@ public class NodeCanvas extends Element {
 
                 if(mode.equals("edit")) {
                     for(Node node : nodes) {
-                        if(node.contains(worldPos.x, worldPos.y)) {
+                        if(isInHitBox(worldPos.x, worldPos.y, node)) {
                             selectedNode = node;
                             if(onNodeEdit != null) {
                                 onNodeEdit.run();
@@ -67,7 +69,7 @@ public class NodeCanvas extends Element {
 
                 if(mode.equals("connect")) {
                     for(Node node : nodes) {
-                        if(node.contains(worldPos.x, worldPos.y)) {
+                        if(isInHitBox(worldPos.x, worldPos.y, node)) {
                             if(connectStart == null) {
                                 connectStart = node;
                             } else {
@@ -84,7 +86,7 @@ public class NodeCanvas extends Element {
 
                 if(mode.equals("delete")) {
                     for(Node node : nodes) {
-                        if(node.contains(worldPos.x, worldPos.y)) {
+                        if(isInHitBox(worldPos.x, worldPos.y, node)) {
                             nodes.remove(node);
                             for(Node n : nodes) {
                                 n.connections.remove(node);
@@ -133,6 +135,13 @@ public class NodeCanvas extends Element {
         });
     }
 
+    private boolean isInHitBox(float worldX, float worldY, Node node) {
+        return worldX >= node.x - HIT_BOX_EXPAND && 
+               worldX <= node.x + node.width + HIT_BOX_EXPAND &&
+               worldY >= node.y - HIT_BOX_EXPAND && 
+               worldY <= node.y + node.height + HIT_BOX_EXPAND;
+    }
+
     public Vec2 screenToWorld(float x, float y) {
         return new Vec2(
             (x - width/2f) / zoom - offset.x,
@@ -158,21 +167,19 @@ public class NodeCanvas extends Element {
     public void draw() {
         validate();
 
-        Draw.color(0.2f, 0.2f, 0.25f, 1f);
+        Draw.color(0.15f, 0.15f, 0.2f, 1f);
         Fill.rect(x + width/2f, y + height/2f, width, height);
 
-        Lines.stroke(3f);
-        Draw.color(0.3f, 0.3f, 0.35f, 1f);
+        Lines.stroke(2f);
+        Draw.color(0.25f, 0.25f, 0.3f, 1f);
         for(float gx = -2000f; gx < 2000f; gx += 50f) {
             Vec2 start = worldToScreen(gx, -2000f);
-            Vec2 end = worldToScreen(gx, 2000f);
             if(start.x >= x && start.x <= x + width) {
                 Lines.line(start.x, y, start.x, y + height);
             }
         }
         for(float gy = -2000f; gy < 2000f; gy += 50f) {
             Vec2 start = worldToScreen(-2000f, gy);
-            Vec2 end = worldToScreen(2000f, gy);
             if(start.y >= y && start.y <= y + height) {
                 Lines.line(x, start.y, x + width, start.y);
             }
@@ -184,7 +191,7 @@ public class NodeCanvas extends Element {
                 Vec2 end = worldToScreen(target.getInputPoint().x, target.getInputPoint().y);
 
                 Draw.color(Color.white);
-                Lines.stroke(8f);
+                Lines.stroke(6f);
                 Lines.line(start.x, start.y, end.x, end.y);
             }
         }
@@ -194,38 +201,49 @@ public class NodeCanvas extends Element {
             float screenWidth = node.width * zoom;
             float screenHeight = node.height * zoom;
 
-            Draw.color(node.color);
+            Draw.color(node.color.r * 0.3f, node.color.g * 0.3f, node.color.b * 0.3f, 1f);
             Fill.rect(screenPos.x, screenPos.y, screenWidth, screenHeight);
 
-            Draw.color(Color.white);
-            Lines.stroke(6f);
+            Draw.color(node.color);
+            Lines.stroke(5f);
             Lines.rect(screenPos.x, screenPos.y, screenWidth, screenHeight);
 
-            Fonts.outline.getData().setScale(1.2f * zoom);
-            Fonts.outline.draw(node.label, screenPos.x + 20f * zoom, screenPos.y + screenHeight - 30f * zoom);
+            Draw.color(node.color.r * 0.5f, node.color.g * 0.5f, node.color.b * 0.5f, 1f);
+            Fill.rect(screenPos.x, screenPos.y + screenHeight - 50f * zoom, screenWidth, 50f * zoom);
+
+            Draw.color(Color.white);
+            Fonts.outline.getData().setScale(1.0f * zoom);
+            Fonts.outline.draw(node.label, screenPos.x + 20f * zoom, screenPos.y + screenHeight - 15f * zoom);
 
             if(!node.value.isEmpty()) {
-                Fonts.outline.getData().setScale(0.9f * zoom);
-                String displayValue = node.value.length() > 15 ? node.value.substring(0, 15) + "..." : node.value;
-                Fonts.outline.draw(displayValue, screenPos.x + 20f * zoom, screenPos.y + 50f * zoom);
+                Draw.color(Color.lightGray);
+                Fonts.outline.getData().setScale(0.8f * zoom);
+                String displayValue = node.value.length() > 20 ? node.value.substring(0, 20) + "..." : node.value;
+                Fonts.outline.draw("Value: " + displayValue, screenPos.x + 20f * zoom, screenPos.y + screenHeight/2f);
             }
 
             Fonts.outline.getData().setScale(1f);
 
             Vec2 inputScreen = worldToScreen(node.getInputPoint().x, node.getInputPoint().y);
             Draw.color(Color.green);
-            Fill.circle(inputScreen.x, inputScreen.y, 20f * zoom);
+            Fill.circle(inputScreen.x, inputScreen.y, 15f);
+            Draw.color(Color.darkGray);
+            Lines.stroke(3f);
+            Lines.circle(inputScreen.x, inputScreen.y, 15f);
 
             Vec2 outputScreen = worldToScreen(node.getOutputPoint().x, node.getOutputPoint().y);
             Draw.color(Color.red);
-            Fill.circle(outputScreen.x, outputScreen.y, 20f * zoom);
+            Fill.circle(outputScreen.x, outputScreen.y, 15f);
+            Draw.color(Color.darkGray);
+            Lines.stroke(3f);
+            Lines.circle(outputScreen.x, outputScreen.y, 15f);
         }
 
         if(connectStart != null) {
             Vec2 start = worldToScreen(connectStart.getOutputPoint().x, connectStart.getOutputPoint().y);
             Draw.color(Color.yellow);
-            Lines.stroke(8f);
-            Lines.circle(start.x, start.y, 30f);
+            Lines.stroke(6f);
+            Lines.circle(start.x, start.y, 25f);
         }
 
         Draw.reset();
