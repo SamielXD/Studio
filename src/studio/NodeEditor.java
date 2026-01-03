@@ -16,6 +16,7 @@ public class NodeEditor extends BaseDialog {
     private NodeCanvas canvas;
     private String currentScriptName = "Untitled";
     private Label statusLabel;
+    private String uiLayout = "bottom";
 
     public NodeEditor() {
         super("Studio - Node Editor");
@@ -23,12 +24,23 @@ public class NodeEditor extends BaseDialog {
         canvas = new NodeCanvas();
         canvas.onNodeEdit = () -> showEditDialog(canvas.selectedNode);
 
+        uiLayout = Core.settings.getString("studio-ui-layout", "bottom");
         buildUI();
+    }
+
+    private void buildUI() {
+        Table main = new Table();
+        main.setFillParent(true);
+
+        main.add(canvas).grow().row();
+
+        statusLabel = new Label("MODE: MOVE");
+        statusLabel.setFontScale(1.5f);
 
         Table buttonTable = new Table();
-        buttonTable.defaults().size(150f, 80f);
-        
-        buttonTable.button("Close", Icon.left, () -> hide());
+        buttonTable.defaults().size(150f, 80f).pad(4f);
+
+        buttonTable.button("Close", Icon.left, this::hide);
         buttonTable.button("Save", Icon.save, this::saveScript);
         buttonTable.button("Load", Icon.download, this::showLoadDialog);
         buttonTable.button("Run", Icon.play, this::runScript);
@@ -48,76 +60,113 @@ public class NodeEditor extends BaseDialog {
             canvas.mode = "delete";
             statusLabel.setText("MODE: DELETE");
         });
-        buttonTable.button("Add", Icon.add, this::showAddNodeDialog);
+        buttonTable.button("Add", Icon.add, this::showNodeBrowser);
         buttonTable.button("Z-", Icon.zoom, () -> canvas.zoom = arc.math.Mathf.clamp(canvas.zoom - 0.2f, 0.2f, 3f));
         buttonTable.button("Z+", Icon.zoom, () -> canvas.zoom = arc.math.Mathf.clamp(canvas.zoom + 0.2f, 0.2f, 3f));
+        buttonTable.button("Settings", Icon.settings, this::showUISettings);
 
         ScrollPane scrollPane = new ScrollPane(buttonTable);
         scrollPane.setScrollingDisabled(false, true);
-        buttons.add(scrollPane).growX().height(80f);
-    }
-
-    private void buildUI() {
-        Table main = new Table();
-        main.setFillParent(true);
-
-        main.add(canvas).grow().row();
-
-        statusLabel = new Label("MODE: MOVE");
-        statusLabel.setFontScale(1.5f);
+        
+        if(uiLayout.equals("top")) {
+            main.getChildren().reverse();
+        }
+        
+        main.add(scrollPane).growX().height(90f).row();
         main.add(statusLabel).fillX().pad(10f);
 
         cont.add(main).grow();
     }
 
-    private void showAddNodeDialog() {
-        BaseDialog dialog = new BaseDialog("Add Node");
-        dialog.cont.defaults().size(400f, 100f).pad(8f);
+    private void showUISettings() {
+        BaseDialog dialog = new BaseDialog("UI Settings");
+        dialog.cont.defaults().size(400f, 80f).pad(10f);
 
-        dialog.cont.button("ON START (Event)", () -> {
+        Label label = new Label("Button Position:");
+        label.setFontScale(1.5f);
+        dialog.cont.add(label).row();
+
+        dialog.cont.button("Bottom (Current: " + uiLayout + ")", () -> {
+            Core.settings.put("studio-ui-layout", "bottom");
+            Vars.ui.showInfoFade("Restart editor to apply");
+            dialog.hide();
+        }).row();
+
+        dialog.cont.button("Top", () -> {
+            Core.settings.put("studio-ui-layout", "top");
+            Vars.ui.showInfoFade("Restart editor to apply");
+            dialog.hide();
+        }).row();
+
+        dialog.addCloseButton();
+        dialog.show();
+    }
+
+    private void showNodeBrowser() {
+        BaseDialog dialog = new BaseDialog("Node Browser");
+        
+        Table content = new Table();
+        content.defaults().size(450f, 100f).pad(8f);
+
+        content.add("[green]═══ EVENTS ═══").row();
+        content.button("ON START", () -> {
             canvas.addNode("event", "On Start", Color.green);
             dialog.hide();
         }).row();
-
-        dialog.cont.button("ON WAVE (Event)", () -> {
+        content.button("ON WAVE", () -> {
             canvas.addNode("event", "On Wave", Color.green);
             dialog.hide();
         }).row();
-
-        dialog.cont.button("ON UNIT SPAWN (Event)", () -> {
+        content.button("ON UNIT SPAWN", () -> {
             canvas.addNode("event", "On Unit Spawn", Color.green);
             dialog.hide();
         }).row();
 
-        dialog.cont.button("SPAWN UNIT (Action)", () -> {
-            canvas.addNode("action", "Spawn Unit", Color.blue);
-            dialog.hide();
-        }).row();
-
-        dialog.cont.button("MESSAGE (Action)", () -> {
+        content.add("[blue]═══ ACTIONS ═══").padTop(20f).row();
+        content.button("MESSAGE", () -> {
             canvas.addNode("action", "Message", Color.blue);
             dialog.hide();
         }).row();
-
-        dialog.cont.button("SET BLOCK (Action)", () -> {
+        content.button("SPAWN UNIT", () -> {
+            canvas.addNode("action", "Spawn Unit", Color.blue);
+            dialog.hide();
+        }).row();
+        content.button("SET BLOCK", () -> {
             canvas.addNode("action", "Set Block", Color.blue);
             dialog.hide();
         }).row();
-
-        dialog.cont.button("CREATE MOD FOLDER (Action)", () -> {
+        content.button("CREATE MOD FOLDER", () -> {
             canvas.addNode("action", "Create Mod Folder", Color.cyan);
             dialog.hide();
         }).row();
 
-        dialog.cont.button("IF (Condition)", () -> {
+        content.add("[orange]═══ CONDITIONS ═══").padTop(20f).row();
+        content.button("IF", () -> {
             canvas.addNode("condition", "If", Color.orange);
             dialog.hide();
         }).row();
-
-        dialog.cont.button("WAIT (Condition)", () -> {
+        content.button("WAIT", () -> {
             canvas.addNode("condition", "Wait", Color.orange);
             dialog.hide();
         }).row();
+
+        content.add("[purple]═══ VALUES ═══").padTop(20f).row();
+        content.button("NUMBER", () -> {
+            canvas.addNode("value", "Number", Color.purple);
+            dialog.hide();
+        }).row();
+        content.button("TEXT", () -> {
+            canvas.addNode("value", "Text", Color.purple);
+            dialog.hide();
+        }).row();
+        content.button("UNIT TYPE", () -> {
+            canvas.addNode("value", "Unit Type", Color.purple);
+            dialog.hide();
+        }).row();
+
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setScrollingDisabled(true, false);
+        dialog.cont.add(scrollPane).size(500f, 600f);
 
         dialog.addCloseButton();
         dialog.show();
@@ -130,15 +179,12 @@ public class NodeEditor extends BaseDialog {
         dialog.cont.defaults().size(600f, 80f).pad(10f);
 
         if(node.inputs.size > 0) {
-            // SPAWN UNIT NODE - Special handling
             if(node.label.equals("Spawn Unit")) {
                 showSpawnUnitDialog(dialog, node);
             }
-            // CREATE MOD FOLDER NODE - NEW!
             else if(node.label.equals("Create Mod Folder")) {
                 showCreateModDialog(dialog, node);
             }
-            // DEFAULT - All other nodes
             else {
                 showDefaultEditDialog(dialog, node);
             }
@@ -156,7 +202,7 @@ public class NodeEditor extends BaseDialog {
         Label unitLabel = new Label("Unit Type:");
         unitLabel.setFontScale(1.5f);
         dialog.cont.add(unitLabel).left().row();
-        
+
         TextField unitField = new TextField(node.inputs.get(0).value);
         unitField.setStyle(new TextField.TextFieldStyle(unitField.getStyle()));
         unitField.getStyle().font.getData().setScale(1.5f);
@@ -168,30 +214,27 @@ public class NodeEditor extends BaseDialog {
 
         Table locationButtons = new Table();
         locationButtons.defaults().size(180f, 80f).pad(5f);
-        
+
         final String[] selectedLocation = {node.inputs.get(1).value};
-        
+
         TextButton coreBtn = new TextButton("At Core", Styles.togglet);
         coreBtn.setChecked(selectedLocation[0].equals("core"));
-        coreBtn.changed(() -> {
+        coreBtn.clicked(() -> {
             selectedLocation[0] = "core";
-            coreBtn.setChecked(true);
         });
         locationButtons.add(coreBtn);
 
         TextButton coordBtn = new TextButton("At Coordinates", Styles.togglet);
         coordBtn.setChecked(selectedLocation[0].equals("coordinates"));
-        coordBtn.changed(() -> {
+        coordBtn.clicked(() -> {
             selectedLocation[0] = "coordinates";
-            coordBtn.setChecked(true);
         });
         locationButtons.add(coordBtn);
 
         TextButton playerBtn = new TextButton("At Player", Styles.togglet);
         playerBtn.setChecked(selectedLocation[0].equals("player"));
-        playerBtn.changed(() -> {
+        playerBtn.clicked(() -> {
             selectedLocation[0] = "player";
-            playerBtn.setChecked(true);
         });
         locationButtons.add(playerBtn);
 
@@ -200,7 +243,7 @@ public class NodeEditor extends BaseDialog {
         Label xLabel = new Label("X Coordinate:");
         xLabel.setFontScale(1.5f);
         dialog.cont.add(xLabel).left().row();
-        
+
         TextField xField = new TextField(node.inputs.get(2).value);
         xField.setStyle(new TextField.TextFieldStyle(xField.getStyle()));
         xField.getStyle().font.getData().setScale(1.5f);
@@ -209,7 +252,7 @@ public class NodeEditor extends BaseDialog {
         Label yLabel = new Label("Y Coordinate:");
         yLabel.setFontScale(1.5f);
         dialog.cont.add(yLabel).left().row();
-        
+
         TextField yField = new TextField(node.inputs.get(3).value);
         yField.setStyle(new TextField.TextFieldStyle(yField.getStyle()));
         yField.getStyle().font.getData().setScale(1.5f);
@@ -218,7 +261,7 @@ public class NodeEditor extends BaseDialog {
         Label amountLabel = new Label("Amount:");
         amountLabel.setFontScale(1.5f);
         dialog.cont.add(amountLabel).left().row();
-        
+
         TextField amountField = new TextField(node.inputs.get(4).value);
         amountField.setStyle(new TextField.TextFieldStyle(amountField.getStyle()));
         amountField.getStyle().font.getData().setScale(1.5f);
@@ -230,10 +273,10 @@ public class NodeEditor extends BaseDialog {
             node.inputs.get(2).value = xField.getText();
             node.inputs.get(3).value = yField.getText();
             node.inputs.get(4).value = amountField.getText();
-            
+
             node.value = unitField.getText() + "|" + selectedLocation[0] + "|" + 
                          xField.getText() + "|" + yField.getText() + "|" + amountField.getText();
-            
+
             dialog.hide();
         }).size(300f, 100f);
     }
@@ -242,7 +285,7 @@ public class NodeEditor extends BaseDialog {
         Label nameLabel = new Label("Mod Folder Name:");
         nameLabel.setFontScale(1.5f);
         dialog.cont.add(nameLabel).left().row();
-        
+
         TextField nameField = new TextField(node.inputs.get(0).value);
         nameField.setStyle(new TextField.TextFieldStyle(nameField.getStyle()));
         nameField.getStyle().font.getData().setScale(1.5f);
@@ -251,7 +294,7 @@ public class NodeEditor extends BaseDialog {
         Label displayNameLabel = new Label("Display Name:");
         displayNameLabel.setFontScale(1.5f);
         dialog.cont.add(displayNameLabel).left().row();
-        
+
         TextField displayNameField = new TextField(node.inputs.get(1).value);
         displayNameField.setStyle(new TextField.TextFieldStyle(displayNameField.getStyle()));
         displayNameField.getStyle().font.getData().setScale(1.5f);
@@ -260,7 +303,7 @@ public class NodeEditor extends BaseDialog {
         Label authorLabel = new Label("Author:");
         authorLabel.setFontScale(1.5f);
         dialog.cont.add(authorLabel).left().row();
-        
+
         TextField authorField = new TextField(node.inputs.get(2).value);
         authorField.setStyle(new TextField.TextFieldStyle(authorField.getStyle()));
         authorField.getStyle().font.getData().setScale(1.5f);
@@ -269,7 +312,7 @@ public class NodeEditor extends BaseDialog {
         Label descLabel = new Label("Description:");
         descLabel.setFontScale(1.5f);
         dialog.cont.add(descLabel).left().row();
-        
+
         TextField descField = new TextField(node.inputs.get(3).value);
         descField.setStyle(new TextField.TextFieldStyle(descField.getStyle()));
         descField.getStyle().font.getData().setScale(1.5f);
@@ -280,10 +323,10 @@ public class NodeEditor extends BaseDialog {
             node.inputs.get(1).value = displayNameField.getText();
             node.inputs.get(2).value = authorField.getText();
             node.inputs.get(3).value = descField.getText();
-            
+
             node.value = nameField.getText() + "|" + displayNameField.getText() + "|" + 
                          authorField.getText() + "|" + descField.getText();
-            
+
             dialog.hide();
         }).size(300f, 100f);
     }
@@ -306,9 +349,7 @@ public class NodeEditor extends BaseDialog {
         }
 
         dialog.buttons.button("DONE", dialog::hide).size(300f, 100f);
-    }
-
-    private void saveScript() {
+    }private void saveScript() {
         BaseDialog dialog = new BaseDialog("Save Script");
 
         Label label = new Label("Script Name:");
@@ -396,8 +437,7 @@ public class NodeEditor extends BaseDialog {
     private void loadScript(String name) {
         try {
             String json = Core.files.local("mods/studio-scripts/" + name + ".json").readString();
-            
-            // FIXED: Proper JSON deserialization
+
             Json jsonParser = new Json();
             jsonParser.setIgnoreUnknownFields(true);
             Seq<NodeData> nodeDataList = jsonParser.fromJson(Seq.class, NodeData.class, json);
@@ -409,7 +449,6 @@ public class NodeEditor extends BaseDialog {
             canvas.nodes.clear();
             Seq<Node> loadedNodes = new Seq<>();
 
-            // Load nodes
             for(NodeData data : nodeDataList) {
                 Node node = new Node();
                 node.id = data.id;
@@ -423,7 +462,6 @@ public class NodeEditor extends BaseDialog {
                 node.height = 200f;
                 node.setupInputs();
 
-                // FIXED: Restore input values properly
                 if(data.inputValues != null && data.inputValues.size > 0) {
                     for(int i = 0; i < Math.min(node.inputs.size, data.inputValues.size); i++) {
                         node.inputs.get(i).value = data.inputValues.get(i);
@@ -431,10 +469,8 @@ public class NodeEditor extends BaseDialog {
                 }
 
                 loadedNodes.add(node);
-                Log.info("Loaded node: " + node.label + " at (" + node.x + ", " + node.y + ")");
             }
 
-            // Restore connections
             for(int i = 0; i < nodeDataList.size; i++) {
                 NodeData data = nodeDataList.get(i);
                 Node node = loadedNodes.get(i);
@@ -444,7 +480,6 @@ public class NodeEditor extends BaseDialog {
                         Node target = loadedNodes.find(n -> n.id.equals(connId));
                         if(target != null) {
                             node.connections.add(target);
-                            Log.info("Connected: " + node.label + " -> " + target.label);
                         }
                     }
                 }
