@@ -33,88 +33,9 @@ public class NodeEditor extends BaseDialog {
 
         addCloseButton();
 
-        buttons.button("Save", Icon.save, this::saveScript).size(150f, 80f);
-        buttons.button("Load", Icon.download, this::showLoadDialog).size(150f, 80f);
-        buttons.button("Run", Icon.play, this::runScript).size(150f, 80f);
-    }
-
-    private void buildDesktop() {
-        Table main = new Table();
-        main.setFillParent(true);
-
-        Table toolbox = new Table(Styles.black6);
-        toolbox.defaults().size(140f, 55f).pad(5f);
-
-        toolbox.add("EVENTS").color(Color.green).row();
-        toolbox.button("On Start", () -> canvas.addNode("event", "On Start", Color.green)).row();
-        toolbox.button("On Wave", () -> canvas.addNode("event", "On Wave", Color.green)).row();
-        toolbox.button("On Unit Spawn", () -> canvas.addNode("event", "On Unit Spawn", Color.green)).row();
-        toolbox.row();
-
-        toolbox.add("ACTIONS").color(Color.blue).row();
-        toolbox.button("Spawn Unit", () -> canvas.addNode("action", "Spawn Unit", Color.blue)).row();
-        toolbox.button("Message", () -> canvas.addNode("action", "Message", Color.blue)).row();
-        toolbox.button("Set Block", () -> canvas.addNode("action", "Set Block", Color.blue)).row();
-        toolbox.row();
-
-        toolbox.add("CONDITIONS").color(Color.orange).row();
-        toolbox.button("If", () -> canvas.addNode("condition", "If", Color.orange)).row();
-        toolbox.button("Wait", () -> canvas.addNode("condition", "Wait", Color.orange)).row();
-        toolbox.row();
-
-        toolbox.add("VALUES").color(Color.purple).row();
-        toolbox.button("Number", () -> canvas.addNode("value", "Number", Color.purple)).row();
-        toolbox.button("Text", () -> canvas.addNode("value", "Text", Color.purple)).row();
-        toolbox.button("Unit Type", () -> canvas.addNode("value", "Unit Type", Color.purple)).row();
-
-        main.add(toolbox).fillY().width(160f);
-        main.add(canvas).grow();
-
-        Table modes = new Table();
-        modes.defaults().size(100f, 55f).pad(5f);
-
-        TextButton moveBtn = modes.button("Move", () -> canvas.mode = "move").get();
-        TextButton editBtn = modes.button("Edit", () -> canvas.mode = "edit").get();
-        TextButton connectBtn = modes.button("Connect", () -> canvas.mode = "connect").get();
-        TextButton deleteBtn = modes.button("Delete", () -> canvas.mode = "delete").get();
-
-        moveBtn.clicked(() -> {
-            moveBtn.setChecked(true);
-            editBtn.setChecked(false);
-            connectBtn.setChecked(false);
-            deleteBtn.setChecked(false);
-        });
-
-        editBtn.clicked(() -> {
-            moveBtn.setChecked(false);
-            editBtn.setChecked(true);
-            connectBtn.setChecked(false);
-            deleteBtn.setChecked(false);
-        });
-
-        connectBtn.clicked(() -> {
-            moveBtn.setChecked(false);
-            editBtn.setChecked(false);
-            connectBtn.setChecked(true);
-            deleteBtn.setChecked(false);
-        });
-
-        deleteBtn.clicked(() -> {
-            moveBtn.setChecked(false);
-            editBtn.setChecked(false);
-            connectBtn.setChecked(false);
-            deleteBtn.setChecked(true);
-        });
-
-        moveBtn.setChecked(true);
-
-        statusLabel = new Label("");
-        modes.add(statusLabel).growX().padLeft(20f);
-
-        main.row();
-        main.add(modes).colspan(2).fillX();
-
-        cont.add(main).grow();
+        buttons.button("Save", Icon.save, this::saveScript).size(200f, 100f);
+        buttons.button("Load", Icon.download, this::showLoadDialog).size(200f, 100f);
+        buttons.button("Run", Icon.play, this::runScript).size(200f, 100f);
     }
 
     private void buildMobilePortrait() {
@@ -122,16 +43,17 @@ public class NodeEditor extends BaseDialog {
         main.setFillParent(true);
 
         Table topBar = new Table(Styles.black6);
-        topBar.defaults().size(120f, 80f).pad(5f);
+        topBar.defaults().size(180f, 120f).pad(8f);
 
-        TextButton moveBtn = topBar.button("Move", () -> canvas.mode = "move").get();
-        TextButton editBtn = topBar.button("Edit", () -> canvas.mode = "edit").get();
-        TextButton linkBtn = topBar.button("Link", () -> canvas.mode = "connect").get();
-        TextButton delBtn = topBar.button("Del", () -> canvas.mode = "delete").get();
+        TextButton moveBtn = topBar.button("MOVE", () -> canvas.mode = "move").get();
+        TextButton editBtn = topBar.button("EDIT", () -> canvas.mode = "edit").get();
         topBar.row();
-        topBar.button("Add Node", () -> showAddNodeDialog()).width(250f).height(80f);
-        topBar.button("Z-", () -> canvas.zoom = arc.math.Mathf.clamp(canvas.zoom - 0.3f, 0.2f, 3f));
-        topBar.button("Z+", () -> canvas.zoom = arc.math.Mathf.clamp(canvas.zoom + 0.3f, 0.2f, 3f));
+        TextButton linkBtn = topBar.button("LINK", () -> canvas.mode = "connect").get();
+        TextButton delBtn = topBar.button("DELETE", () -> canvas.mode = "delete").get();
+        topBar.row();
+        topBar.button("ADD NODE", () -> showAddNodeDialog()).width(370f).height(120f).colspan(2).row();
+        topBar.button("ZOOM -", () -> canvas.zoom = arc.math.Mathf.clamp(canvas.zoom - 0.2f, 0.2f, 3f)).width(180f);
+        topBar.button("ZOOM +", () -> canvas.zoom = arc.math.Mathf.clamp(canvas.zoom + 0.2f, 0.2f, 3f)).width(180f);
 
         setupModeButtons(moveBtn, editBtn, linkBtn, delBtn);
 
@@ -139,7 +61,8 @@ public class NodeEditor extends BaseDialog {
         main.add(canvas).grow().row();
 
         statusLabel = new Label("");
-        main.add(statusLabel).fillX().pad(5f);
+        statusLabel.setFontScale(1.5f);
+        main.add(statusLabel).fillX().pad(10f);
 
         cont.add(main).grow();
     }
@@ -149,19 +72,19 @@ public class NodeEditor extends BaseDialog {
         main.setFillParent(true);
 
         Table leftBar = new Table(Styles.black6);
-        leftBar.defaults().size(120f, 70f).pad(4f);
+        leftBar.defaults().size(180f, 100f).pad(8f);
 
-        TextButton moveBtn = leftBar.button("Move", () -> canvas.mode = "move").get();
+        TextButton moveBtn = leftBar.button("MOVE", () -> canvas.mode = "move").get();
         leftBar.row();
-        TextButton editBtn = leftBar.button("Edit", () -> canvas.mode = "edit").get();
+        TextButton editBtn = leftBar.button("EDIT", () -> canvas.mode = "edit").get();
         leftBar.row();
-        TextButton linkBtn = leftBar.button("Link", () -> canvas.mode = "connect").get();
+        TextButton linkBtn = leftBar.button("LINK", () -> canvas.mode = "connect").get();
         leftBar.row();
-        TextButton delBtn = leftBar.button("Del", () -> canvas.mode = "delete").get();
+        TextButton delBtn = leftBar.button("DELETE", () -> canvas.mode = "delete").get();
         leftBar.row();
-        leftBar.button("Add Node", () -> showAddNodeDialog()).height(80f).row();
-        leftBar.button("Z-", () -> canvas.zoom = arc.math.Mathf.clamp(canvas.zoom - 0.3f, 0.2f, 3f)).row();
-        leftBar.button("Z+", () -> canvas.zoom = arc.math.Mathf.clamp(canvas.zoom + 0.3f, 0.2f, 3f)).row();
+        leftBar.button("ADD NODE", () -> showAddNodeDialog()).height(120f).row();
+        leftBar.button("ZOOM -", () -> canvas.zoom = arc.math.Mathf.clamp(canvas.zoom - 0.2f, 0.2f, 3f)).row();
+        leftBar.button("ZOOM +", () -> canvas.zoom = arc.math.Mathf.clamp(canvas.zoom + 0.2f, 0.2f, 3f)).row();
 
         setupModeButtons(moveBtn, editBtn, linkBtn, delBtn);
 
@@ -169,8 +92,9 @@ public class NodeEditor extends BaseDialog {
         main.add(canvas).grow();
 
         statusLabel = new Label("");
+        statusLabel.setFontScale(1.5f);
         main.row();
-        main.add(statusLabel).colspan(2).fillX().pad(5f);
+        main.add(statusLabel).colspan(2).fillX().pad(10f);
 
         cont.add(main).grow();
     }
@@ -209,59 +133,59 @@ public class NodeEditor extends BaseDialog {
 
     private void showAddNodeDialog() {
         BaseDialog dialog = new BaseDialog("Add Node");
-        dialog.cont.defaults().size(250f, 70f).pad(5f);
+        dialog.cont.defaults().size(400f, 100f).pad(8f);
 
-        dialog.cont.button("On Start", () -> {
+        dialog.cont.button("ON START (Event)", () -> {
             canvas.addNode("event", "On Start", Color.green);
             dialog.hide();
         }).row();
 
-        dialog.cont.button("On Wave", () -> {
+        dialog.cont.button("ON WAVE (Event)", () -> {
             canvas.addNode("event", "On Wave", Color.green);
             dialog.hide();
         }).row();
 
-        dialog.cont.button("On Unit Spawn", () -> {
+        dialog.cont.button("ON UNIT SPAWN (Event)", () -> {
             canvas.addNode("event", "On Unit Spawn", Color.green);
             dialog.hide();
         }).row();
 
-        dialog.cont.button("Spawn Unit", () -> {
+        dialog.cont.button("SPAWN UNIT (Action)", () -> {
             canvas.addNode("action", "Spawn Unit", Color.blue);
             dialog.hide();
         }).row();
 
-        dialog.cont.button("Message", () -> {
+        dialog.cont.button("MESSAGE (Action)", () -> {
             canvas.addNode("action", "Message", Color.blue);
             dialog.hide();
         }).row();
 
-        dialog.cont.button("Set Block", () -> {
+        dialog.cont.button("SET BLOCK (Action)", () -> {
             canvas.addNode("action", "Set Block", Color.blue);
             dialog.hide();
         }).row();
 
-        dialog.cont.button("If", () -> {
+        dialog.cont.button("IF (Condition)", () -> {
             canvas.addNode("condition", "If", Color.orange);
             dialog.hide();
         }).row();
 
-        dialog.cont.button("Wait", () -> {
+        dialog.cont.button("WAIT (Condition)", () -> {
             canvas.addNode("condition", "Wait", Color.orange);
             dialog.hide();
         }).row();
 
-        dialog.cont.button("Number", () -> {
+        dialog.cont.button("NUMBER (Value)", () -> {
             canvas.addNode("value", "Number", Color.purple);
             dialog.hide();
         }).row();
 
-        dialog.cont.button("Text", () -> {
+        dialog.cont.button("TEXT (Value)", () -> {
             canvas.addNode("value", "Text", Color.purple);
             dialog.hide();
         }).row();
 
-        dialog.cont.button("Unit Type", () -> {
+        dialog.cont.button("UNIT TYPE (Value)", () -> {
             canvas.addNode("value", "Unit Type", Color.purple);
             dialog.hide();
         }).row();
@@ -274,14 +198,18 @@ public class NodeEditor extends BaseDialog {
         if(node == null) return;
 
         BaseDialog dialog = new BaseDialog("Edit Node: " + node.label);
-        dialog.cont.defaults().size(350f, 60f).pad(5f);
+        dialog.cont.defaults().size(500f, 80f).pad(10f);
 
         if(node.inputs.size > 0) {
             for(Node.NodeInput input : node.inputs) {
-                dialog.cont.add(input.label + ":").left().row();
+                Label label = new Label(input.label + ":");
+                label.setFontScale(1.5f);
+                dialog.cont.add(label).left().row();
 
                 TextField field = new TextField(input.value);
-                dialog.cont.add(field).fillX().row();
+                field.setStyle(new TextField.TextFieldStyle(field.getStyle()));
+                field.getStyle().font.getData().setScale(1.5f);
+                dialog.cont.add(field).fillX().height(100f).row();
 
                 field.changed(() -> {
                     input.value = field.getText();
@@ -289,21 +217,28 @@ public class NodeEditor extends BaseDialog {
                 });
             }
         } else {
-            dialog.cont.add("This node has no editable properties").row();
+            Label label = new Label("This node has no editable properties");
+            label.setFontScale(1.5f);
+            dialog.cont.add(label).row();
         }
 
-        dialog.buttons.button("Done", dialog::hide).size(200f, 70f);
+        dialog.buttons.button("DONE", dialog::hide).size(300f, 100f);
         dialog.show();
     }
 
     private void saveScript() {
         BaseDialog dialog = new BaseDialog("Save Script");
-        dialog.cont.add("Script Name:").row();
+        
+        Label label = new Label("Script Name:");
+        label.setFontScale(1.5f);
+        dialog.cont.add(label).row();
 
         TextField nameField = new TextField(currentScriptName);
-        dialog.cont.add(nameField).size(350f, 60f).pad(10f).row();
+        nameField.setStyle(new TextField.TextFieldStyle(nameField.getStyle()));
+        nameField.getStyle().font.getData().setScale(1.5f);
+        dialog.cont.add(nameField).size(500f, 100f).pad(15f).row();
 
-        dialog.buttons.button("Save", () -> {
+        dialog.buttons.button("SAVE", () -> {
             currentScriptName = nameField.getText();
 
             try {
@@ -342,15 +277,15 @@ public class NodeEditor extends BaseDialog {
             } catch(Exception e) {
                 Log.err("Save failed", e);
             }
-        }).size(180f, 70f);
+        }).size(250f, 100f);
 
-        dialog.buttons.button("Cancel", dialog::hide).size(180f, 70f);
+        dialog.buttons.button("CANCEL", dialog::hide).size(250f, 100f);
         dialog.show();
     }
 
     private void showLoadDialog() {
         BaseDialog dialog = new BaseDialog("Load Script");
-        dialog.cont.defaults().size(350f, 70f).pad(5f);
+        dialog.cont.defaults().size(500f, 100f).pad(10f);
 
         Seq<String> scripts = new Seq<>();
         for(var file : Core.files.local("mods/studio-scripts/").list()) {
@@ -360,7 +295,9 @@ public class NodeEditor extends BaseDialog {
         }
 
         if(scripts.size == 0) {
-            dialog.cont.add("No saved scripts found").row();
+            Label label = new Label("No saved scripts found");
+            label.setFontScale(1.5f);
+            dialog.cont.add(label).row();
         } else {
             for(String scriptName : scripts) {
                 dialog.cont.button(scriptName, () -> {
@@ -391,8 +328,8 @@ public class NodeEditor extends BaseDialog {
                 node.y = data.y;
                 node.value = data.value;
                 node.color = Color.valueOf(data.color);
-                node.width = 250f;
-                node.height = 150f;
+                node.width = 400f;
+                node.height = 200f;
                 node.setupInputs();
 
                 for(Node.NodeInput input : node.inputs) {
