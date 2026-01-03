@@ -25,6 +25,9 @@ public class StudioMod extends Mod {
     public static String currentModName = "studio-temp";
 
     private NodeEditor nodeEditor;
+    private ImageButton floatingButton;
+    private Table floatingButtonContainer;
+    private boolean floatingButtonEnabled = true;
 
     public StudioMod() {
         Log.info("Studio - Visual Scripting System loading...");
@@ -45,6 +48,7 @@ public class StudioMod extends Mod {
         Events.on(ClientLoadEvent.class, e -> {
             setupUI();
             setupSettings();
+            setupFloatingButton();
             loadAllScripts();
         });
 
@@ -64,6 +68,72 @@ public class StudioMod extends Mod {
         Log.info("Real mods path: " + modsRootFolder.absolutePath());
     }
 
+    void setupFloatingButton() {
+        floatingButtonEnabled = Core.settings.getBool("studio-floating-button", true);
+        
+        if(!floatingButtonEnabled) return;
+
+        floatingButtonContainer = new Table();
+        floatingButtonContainer.setFillParent(true);
+        floatingButtonContainer.touchable = Touchable.childrenOnly;
+
+        floatingButton = new ImageButton(Icon.edit, Styles.clearTogglei);
+        floatingButton.resizeImage(40f);
+        
+        Table buttonWrapper = new Table();
+        buttonWrapper.background(Styles.black6);
+        buttonWrapper.add(floatingButton).size(80f, 80f);
+        
+        buttonWrapper.update(() -> {
+            buttonWrapper.setPosition(
+                Core.settings.getFloat("studio-button-x", Core.graphics.getWidth() - 100f),
+                Core.settings.getFloat("studio-button-y", Core.graphics.getHeight() / 2f)
+            );
+        });
+
+        floatingButton.clicked(() -> {
+            showStudioMenu();
+        });
+
+        floatingButton.addListener(new InputListener() {
+            float lastX, lastY;
+            boolean dragging = false;
+
+            @Override
+            public boolean touchDown(InputEvent event, float x, float y, int pointer, KeyCode button) {
+                lastX = x;
+                lastY = y;
+                dragging = false;
+                return true;
+            }
+
+            @Override
+            public void touchDragged(InputEvent event, float x, float y, int pointer) {
+                dragging = true;
+                float newX = buttonWrapper.x + (x - lastX);
+                float newY = buttonWrapper.y + (y - lastY);
+                
+                newX = arc.math.Mathf.clamp(newX, 0, Core.graphics.getWidth() - 80f);
+                newY = arc.math.Mathf.clamp(newY, 0, Core.graphics.getHeight() - 80f);
+                
+                Core.settings.put("studio-button-x", newX);
+                Core.settings.put("studio-button-y", newY);
+            }
+
+            @Override
+            public void touchUp(InputEvent event, float x, float y, int pointer, KeyCode button) {
+                if(!dragging) {
+                    showStudioMenu();
+                }
+            }
+        });
+
+        floatingButtonContainer.add(buttonWrapper);
+        Core.scene.add(floatingButtonContainer);
+        
+        Log.info("Floating Studio button added!");
+    }
+
     void setupUI() {
         Vars.ui.menufrag.addButton("Studio", Icon.edit, () -> {
             showStudioMenu();
@@ -76,6 +146,15 @@ public class StudioMod extends Mod {
             
             table.table(t -> {
                 t.left();
+                t.add("Floating Button:").left().padRight(10);
+                t.check("", Core.settings.getBool("studio-floating-button", true), val -> {
+                    Core.settings.put("studio-floating-button", val);
+                    Vars.ui.showInfoFade("Restart game to apply");
+                }).size(50f);
+            }).padTop(10).row();
+            
+            table.table(t -> {
+                t.left();
                 t.add("Button Layout:").left().padRight(10);
                 t.button(Core.settings.getString("studio-ui-layout", "bottom"), () -> {
                     String current = Core.settings.getString("studio-ui-layout", "bottom");
@@ -83,7 +162,7 @@ public class StudioMod extends Mod {
                     Core.settings.put("studio-ui-layout", newLayout);
                     Vars.ui.showInfoFade("Restart editor to apply: " + newLayout);
                 }).size(200f, 50f);
-            }).row();
+            }).padTop(10).row();
             
             table.table(t -> {
                 t.left();
@@ -111,7 +190,13 @@ public class StudioMod extends Mod {
                 Vars.ui.showInfoText("Mods Folder Location", 
                     "Your mods are stored at:\n" + modsRootFolder.absolutePath() + 
                     "\n\nOn Android:\n/data/io.anuke.mindustry/files/mods");
-            }).size(300f, 60f).padTop(20);
+            }).size(300f, 60f).padTop(20).row();
+            
+            table.button("Reset Button Position", Icon.refresh, () -> {
+                Core.settings.put("studio-button-x", Core.graphics.getWidth() - 100f);
+                Core.settings.put("studio-button-y", Core.graphics.getHeight() / 2f);
+                Vars.ui.showInfoFade("Button position reset!");
+            }).size(300f, 60f).padTop(10);
         });
     }
 
