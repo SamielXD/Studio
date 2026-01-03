@@ -24,6 +24,31 @@ public class NodeEditor extends BaseDialog {
         canvas.onNodeEdit = () -> showEditDialog(canvas.selectedNode);
 
         buildUI();
+        
+        addCloseButton();
+
+        buttons.button("Save", Icon.save, this::saveScript).size(150f, 80f);
+        buttons.button("Load", Icon.download, this::showLoadDialog).size(150f, 80f);
+        buttons.button("Run", Icon.play, this::runScript).size(150f, 80f);
+        buttons.button("Move", Icon.move, () -> {
+            canvas.mode = "move";
+            statusLabel.setText("MODE: MOVE");
+        }).size(150f, 80f);
+        buttons.button("Edit", Icon.edit, () -> {
+            canvas.mode = "edit";
+            statusLabel.setText("MODE: EDIT");
+        }).size(150f, 80f);
+        buttons.button("Link", Icon.link, () -> {
+            canvas.mode = "connect";
+            statusLabel.setText("MODE: LINK");
+        }).size(150f, 80f);
+        buttons.button("Delete", Icon.trash, () -> {
+            canvas.mode = "delete";
+            statusLabel.setText("MODE: DELETE");
+        }).size(150f, 80f);
+        buttons.button("Add", Icon.add, this::showAddNodeDialog).size(150f, 80f);
+        buttons.button("Z-", Icon.zoom, () -> canvas.zoom = arc.math.Mathf.clamp(canvas.zoom - 0.2f, 0.2f, 3f)).size(150f, 80f);
+        buttons.button("Z+", Icon.zoom, () -> canvas.zoom = arc.math.Mathf.clamp(canvas.zoom + 0.2f, 0.2f, 3f)).size(150f, 80f);
     }
 
     private void buildUI() {
@@ -32,43 +57,11 @@ public class NodeEditor extends BaseDialog {
 
         main.add(canvas).grow().row();
 
-        statusLabel = new Label("");
+        statusLabel = new Label("MODE: MOVE");
         statusLabel.setFontScale(1.5f);
         main.add(statusLabel).fillX().pad(10f);
 
         cont.add(main).grow();
-    }
-
-    @Override
-    public void addCloseButton() {
-        buttons.button("CLOSE", Icon.left, () -> hide()).size(150f, 100f);
-        buttons.button("MOVE", Icon.move, () -> {
-            canvas.mode = "move";
-            statusLabel.setText("MODE: MOVE");
-        }).size(150f, 100f);
-        buttons.button("EDIT", Icon.edit, () -> {
-            canvas.mode = "edit";
-            statusLabel.setText("MODE: EDIT");
-        }).size(150f, 100f);
-        buttons.button("LINK", Icon.link, () -> {
-            canvas.mode = "connect";
-            statusLabel.setText("MODE: LINK");
-        }).size(150f, 100f);
-        buttons.button("DELETE", Icon.trash, () -> {
-            canvas.mode = "delete";
-            statusLabel.setText("MODE: DELETE");
-        }).size(150f, 100f);
-        buttons.row();
-        buttons.button("ADD NODE", Icon.add, () -> showAddNodeDialog()).size(150f, 100f);
-        buttons.button("ZOOM -", Icon.zoom, () -> {
-            canvas.zoom = arc.math.Mathf.clamp(canvas.zoom - 0.2f, 0.2f, 3f);
-        }).size(150f, 100f);
-        buttons.button("ZOOM +", Icon.zoom, () -> {
-            canvas.zoom = arc.math.Mathf.clamp(canvas.zoom + 0.2f, 0.2f, 3f);
-        }).size(150f, 100f);
-        buttons.button("SAVE", Icon.save, () -> saveScript()).size(150f, 100f);
-        buttons.button("LOAD", Icon.download, () -> showLoadDialog()).size(150f, 100f);
-        buttons.button("RUN", Icon.play, () -> runScript()).size(150f, 100f);
     }
 
     private void showAddNodeDialog() {
