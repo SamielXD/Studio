@@ -11,6 +11,7 @@ import mindustry.gen.*;
 import mindustry.mod.*;
 import mindustry.type.*;
 import mindustry.world.*;
+import arc.scene.ui.*;
 
 public class StudioMod extends Mod {
     public static Seq<Script> loadedScripts = new Seq<>();
@@ -52,9 +53,10 @@ public class StudioMod extends Mod {
     }
 
     void setupUI() {
-        Vars.ui.menufrag.addButton("Studio", Icon.edit, () -> {
+        TextButton button = Vars.ui.menufrag.addButton("Studio", Icon.edit, () -> {
             nodeEditor.show();
-        }).size(250f, 100f);
+        });
+        button.getLabel().setFontScale(2f);
     }
 
     public static void loadAllScripts() {
