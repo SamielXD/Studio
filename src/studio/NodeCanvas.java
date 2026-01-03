@@ -29,10 +29,16 @@ public class NodeCanvas extends Element {
     public Runnable onNodeEdit;
     public Node selectedNode = null;
 
-    private static final float HIT_BOX_EXPAND = 50f;
+    // Settings from preferences
+    public static float nodeLabelScale = 1.2f;
+    public static float nodeValueScale = 1.0f;
 
     public NodeCanvas() {
         setFillParent(true);
+
+        // Load settings
+        nodeLabelScale = Core.settings.getFloat("studio-label-scale", 1.2f);
+        nodeValueScale = Core.settings.getFloat("studio-value-scale", 1.0f);
 
         addListener(new InputListener() {
             @Override
@@ -47,7 +53,7 @@ public class NodeCanvas extends Element {
 
                 if(mode.equals("move")) {
                     for(Node node : nodes) {
-                        if(isInHitBox(worldPos.x, worldPos.y, node)) {
+                        if(isInsideNode(worldPos.x, worldPos.y, node)) {
                             dragNode = node;
                             dragStart.set(worldPos.x - node.x, worldPos.y - node.y);
                             return true;
@@ -57,7 +63,7 @@ public class NodeCanvas extends Element {
 
                 if(mode.equals("edit")) {
                     for(Node node : nodes) {
-                        if(isInHitBox(worldPos.x, worldPos.y, node)) {
+                        if(isInsideNode(worldPos.x, worldPos.y, node)) {
                             selectedNode = node;
                             if(onNodeEdit != null) {
                                 onNodeEdit.run();
@@ -69,7 +75,7 @@ public class NodeCanvas extends Element {
 
                 if(mode.equals("connect")) {
                     for(Node node : nodes) {
-                        if(isInHitBox(worldPos.x, worldPos.y, node)) {
+                        if(isInsideNode(worldPos.x, worldPos.y, node)) {
                             if(connectStart == null) {
                                 connectStart = node;
                             } else {
@@ -86,7 +92,7 @@ public class NodeCanvas extends Element {
 
                 if(mode.equals("delete")) {
                     for(Node node : nodes) {
-                        if(isInHitBox(worldPos.x, worldPos.y, node)) {
+                        if(isInsideNode(worldPos.x, worldPos.y, node)) {
                             nodes.remove(node);
                             for(Node n : nodes) {
                                 n.connections.remove(node);
@@ -135,11 +141,12 @@ public class NodeCanvas extends Element {
         });
     }
 
-    private boolean isInHitBox(float worldX, float worldY, Node node) {
-        return worldX >= node.x - HIT_BOX_EXPAND && 
-               worldX <= node.x + node.width + HIT_BOX_EXPAND &&
-               worldY >= node.y - HIT_BOX_EXPAND && 
-               worldY <= node.y + node.height + HIT_BOX_EXPAND;
+    // FIXED: Better hitbox detection - exactly the node rectangle
+    private boolean isInsideNode(float worldX, float worldY, Node node) {
+        return worldX >= node.x && 
+               worldX <= node.x + node.width &&
+               worldY >= node.y && 
+               worldY <= node.y + node.height;
     }
 
     public Vec2 screenToWorld(float x, float y) {
@@ -167,9 +174,11 @@ public class NodeCanvas extends Element {
     public void draw() {
         validate();
 
+        // Dark background
         Draw.color(0.15f, 0.15f, 0.2f, 1f);
         Fill.rect(x + width/2f, y + height/2f, width, height);
 
+        // Grid lines
         Lines.stroke(2f);
         Draw.color(0.25f, 0.25f, 0.3f, 1f);
         for(float gx = -2000f; gx < 2000f; gx += 50f) {
@@ -185,6 +194,7 @@ public class NodeCanvas extends Element {
             }
         }
 
+        // Draw connections
         for(Node node : nodes) {
             for(Node target : node.connections) {
                 Vec2 start = worldToScreen(node.getOutputPoint().x, node.getOutputPoint().y);
@@ -196,54 +206,65 @@ public class NodeCanvas extends Element {
             }
         }
 
+        // Draw nodes - NO BACKGROUND, ONLY OUTLINE
         for(Node node : nodes) {
             Vec2 screenPos = worldToScreen(node.x, node.y);
             float screenWidth = node.width * zoom;
             float screenHeight = node.height * zoom;
 
-            Draw.color(node.color.r * 0.3f, node.color.g * 0.3f, node.color.b * 0.3f, 1f);
-            Fill.rect(screenPos.x, screenPos.y, screenWidth, screenHeight);
-
+            // REMOVED: Background fill - NO MORE BUGGY BACKGROUND!
+            
+            // ONLY DRAW COLORED BORDER/OUTLINE
             Draw.color(node.color);
-            Lines.stroke(5f);
+            Lines.stroke(8f); // Thicker border so it's easier to see
             Lines.rect(screenPos.x, screenPos.y, screenWidth, screenHeight);
 
-            Draw.color(node.color.r * 0.5f, node.color.g * 0.5f, node.color.b * 0.5f, 1f);
-            Fill.rect(screenPos.x, screenPos.y + screenHeight - 50f * zoom, screenWidth, 50f * zoom);
+            // Header bar (darker version of node color)
+            Draw.color(node.color.r * 0.4f, node.color.g * 0.4f, node.color.b * 0.4f, 0.8f);
+            Fill.rect(screenPos.x, screenPos.y + screenHeight - 60f * zoom, screenWidth, 60f * zoom);
 
+            // Node label (BIGGER TEXT)
             Draw.color(Color.white);
-            Fonts.outline.getData().setScale(1.0f * zoom);
-            Fonts.outline.draw(node.label, screenPos.x + 20f * zoom, screenPos.y + screenHeight - 15f * zoom);
+            Fonts.outline.getData().setScale(nodeLabelScale * zoom);
+            Fonts.outline.draw(node.label, screenPos.x + 20f * zoom, screenPos.y + screenHeight - 20f * zoom);
 
+            // Node value display (BIGGER TEXT)
             if(!node.value.isEmpty()) {
                 Draw.color(Color.lightGray);
-                Fonts.outline.getData().setScale(0.8f * zoom);
-                String displayValue = node.value.length() > 20 ? node.value.substring(0, 20) + "..." : node.value;
-                Fonts.outline.draw("Value: " + displayValue, screenPos.x + 20f * zoom, screenPos.y + screenHeight/2f);
+                Fonts.outline.getData().setScale(nodeValueScale * zoom);
+                String displayValue = node.value.length() > 25 ? node.value.substring(0, 25) + "..." : node.value;
+                Fonts.outline.draw(displayValue, screenPos.x + 20f * zoom, screenPos.y + screenHeight/2f);
             }
+
+            // Node type badge
+            Draw.color(node.color.r * 0.6f, node.color.g * 0.6f, node.color.b * 0.6f, 0.9f);
+            Fonts.outline.getData().setScale(0.7f * zoom);
+            Fonts.outline.draw("[" + node.type.toUpperCase() + "]", screenPos.x + 20f * zoom, screenPos.y + 30f * zoom);
 
             Fonts.outline.getData().setScale(1f);
 
+            // Input/Output dots (bigger and more visible)
             Vec2 inputScreen = worldToScreen(node.getInputPoint().x, node.getInputPoint().y);
             Draw.color(Color.green);
-            Fill.circle(inputScreen.x, inputScreen.y, 15f);
+            Fill.circle(inputScreen.x, inputScreen.y, 18f);
             Draw.color(Color.darkGray);
             Lines.stroke(3f);
-            Lines.circle(inputScreen.x, inputScreen.y, 15f);
+            Lines.circle(inputScreen.x, inputScreen.y, 18f);
 
             Vec2 outputScreen = worldToScreen(node.getOutputPoint().x, node.getOutputPoint().y);
             Draw.color(Color.red);
-            Fill.circle(outputScreen.x, outputScreen.y, 15f);
+            Fill.circle(outputScreen.x, outputScreen.y, 18f);
             Draw.color(Color.darkGray);
             Lines.stroke(3f);
-            Lines.circle(outputScreen.x, outputScreen.y, 15f);
+            Lines.circle(outputScreen.x, outputScreen.y, 18f);
         }
 
+        // Highlight node being connected
         if(connectStart != null) {
             Vec2 start = worldToScreen(connectStart.getOutputPoint().x, connectStart.getOutputPoint().y);
             Draw.color(Color.yellow);
             Lines.stroke(6f);
-            Lines.circle(start.x, start.y, 25f);
+            Lines.circle(start.x, start.y, 30f);
         }
 
         Draw.reset();
