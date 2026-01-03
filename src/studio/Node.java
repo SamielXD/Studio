@@ -72,7 +72,6 @@ public class Node {
             inputs.add(new NodeInput("Item Name", "my-item"));
             inputs.add(new NodeInput("Display Name", "My Item"));
             inputs.add(new NodeInput("Color (hex)", "ff0000"));
-            inputs.add(new NodeInput("Flammability", "0"));
         }
         else if(label.equals("Add Sprite")) {
             inputs.add(new NodeInput("Sprite Name", "my-sprite"));
@@ -81,6 +80,33 @@ public class Node {
         else if(label.equals("Create Script")) {
             inputs.add(new NodeInput("Script Name", "main.js"));
             inputs.add(new NodeInput("Script Content", "// Your code here"));
+        }
+        else if(label.equals("Set Variable")) {
+            inputs.add(new NodeInput("Variable Name", "myVar"));
+            inputs.add(new NodeInput("Value", "0"));
+        }
+        else if(label.equals("Get Variable")) {
+            inputs.add(new NodeInput("Variable Name", "myVar"));
+        }
+        else if(label.equals("Math Operation")) {
+            inputs.add(new NodeInput("Operation (+,-,*,/)", "+"));
+            inputs.add(new NodeInput("Number A", "0"));
+            inputs.add(new NodeInput("Number B", "0"));
+        }
+        else if(label.equals("Loop")) {
+            inputs.add(new NodeInput("Times", "10"));
+        }
+        else if(label.equals("Compare")) {
+            inputs.add(new NodeInput("Value A", "0"));
+            inputs.add(new NodeInput("Operator (==,!=,>,<)", "=="));
+            inputs.add(new NodeInput("Value B", "0"));
+        }
+        else if(label.equals("Log Message")) {
+            inputs.add(new NodeInput("Message", "Debug log"));
+        }
+        else if(label.equals("Random Number")) {
+            inputs.add(new NodeInput("Min", "0"));
+            inputs.add(new NodeInput("Max", "100"));
         }
         else if(label.equals("Wait")) {
             inputs.add(new NodeInput("Seconds", "1"));
@@ -114,6 +140,10 @@ public class Node {
 
     public Vec2 getOutputPoint() {
         return new Vec2(x + width, y + height / 2);
+    }
+
+    public boolean contains(float worldX, float worldY) {
+        return worldX >= x && worldX <= x + width && worldY >= y && worldY <= y + height;
     }
 
     public static class NodeInput {
