@@ -91,6 +91,12 @@ public class NodeEditor extends BaseDialog {
         topBar.button("Connect", () -> canvas.mode = "connect");
         topBar.button("Delete", () -> canvas.mode = "delete");
         topBar.button("Add", () -> showAddNodeDialog());
+        topBar.button("Zoom-", () -> {
+            canvas.zoom = arc.math.Mathf.clamp(canvas.zoom - 0.2f, 0.2f, 3f);
+        });
+        topBar.button("Zoom+", () -> {
+            canvas.zoom = arc.math.Mathf.clamp(canvas.zoom + 0.2f, 0.2f, 3f);
+        });
         
         main.add(topBar).fillX().row();
         main.add(canvas).grow().row();
