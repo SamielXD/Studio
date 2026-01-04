@@ -589,7 +589,7 @@ public class StudioMod extends Mod {
 
             mindustry.type.UnitType unitType = mindustry.content.UnitTypes.dagger;
 
-            for(mindustry.type.UnitType type : mindustry.content.UnitTypes.copy()) {
+            for(mindustry.type.UnitType type : Vars.content.units()) {
                 if(type.name.equals(unitName)) {
                     unitType = type;
                     break;
@@ -640,7 +640,7 @@ public class StudioMod extends Mod {
 
             mindustry.world.Block block = mindustry.content.Blocks.copperWall;
 
-            for(mindustry.world.Block b : mindustry.content.Blocks.copy()) {
+            for(mindustry.world.Block b : Vars.content.blocks()) {
                 if(b.name.equals(blockName)) {
                     block = b;
                     break;
