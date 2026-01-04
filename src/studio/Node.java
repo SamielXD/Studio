@@ -40,6 +40,9 @@ public class Node {
         else if(label.equals("Spawn Unit")) {
             inputs.add(new NodeInput("Unit Type", "dagger"));
             inputs.add(new NodeInput("Amount", "1"));
+            inputs.add(new NodeInput("Spawn Location", "At Player"));
+            inputs.add(new NodeInput("X Coordinate", "0"));
+            inputs.add(new NodeInput("Y Coordinate", "0"));
         }
         else if(label.equals("Set Block")) {
             inputs.add(new NodeInput("X", "10"));
