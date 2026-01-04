@@ -202,21 +202,21 @@ public class NodeCanvas extends Element {
 
             if(StudioMod.showLabels) {
                 Draw.color(Color.white);
-                float labelScale = Math.min(zoom * 1.2f, 1.2f);
-                Fonts.outline.getData().setScale(labelScale);
+                float labelDrawScale = Math.min(zoom * 1.2f * StudioMod.labelScale, 1.5f);
+                Fonts.outline.getData().setScale(labelDrawScale);
                 Fonts.outline.draw(node.label, screenPos.x + 20f * zoom, screenPos.y + screenHeight - 30f * zoom);
 
                 if(!node.value.isEmpty()) {
                     Draw.color(Color.lightGray);
-                    float valueScale = Math.min(zoom * 1.0f, 1.0f);
-                    Fonts.outline.getData().setScale(valueScale);
+                    float infoDrawScale = Math.min(zoom * 1.0f * StudioMod.infoScale, 1.3f);
+                    Fonts.outline.getData().setScale(infoDrawScale);
                     String displayValue = node.value.length() > 25 ? node.value.substring(0, 25) + "..." : node.value;
                     Fonts.outline.draw(displayValue, screenPos.x + 20f * zoom, screenPos.y + screenHeight/2f);
                 }
 
                 Draw.color(node.color.r * 0.8f, node.color.g * 0.8f, node.color.b * 0.8f, 1f);
-                float typeScale = Math.min(zoom * 0.7f, 0.7f);
-                Fonts.outline.getData().setScale(typeScale);
+                float typeDrawScale = Math.min(zoom * 0.7f * StudioMod.typeScale, 1.0f);
+                Fonts.outline.getData().setScale(typeDrawScale);
                 Fonts.outline.draw("[" + node.type.toUpperCase() + "]", screenPos.x + 20f * zoom, screenPos.y + 30f * zoom);
             }
 
