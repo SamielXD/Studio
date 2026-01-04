@@ -7,7 +7,6 @@ import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import arc.struct.*;
 import arc.util.*;
-import arc.util.serialization.*;
 import mindustry.*;
 import mindustry.gen.*;
 import mindustry.ui.*;
@@ -32,7 +31,7 @@ public class NodeEditor extends BaseDialog {
         main.add(canvas).grow().row();
 
         statusLabel = new Label("MODE: MOVE | EDITOR: GAME SCRIPTS");
-        statusLabel.setFontScale(1.5f);
+        statusLabel.setFontScale(1.2f);
 
         Table buttonTable = new Table();
         buttonTable.defaults().size(150f, 80f).pad(4f);
@@ -74,7 +73,7 @@ public class NodeEditor extends BaseDialog {
         cont.add(main).grow();
     }
 
-    private void updateStatusLabel() {
+    public void updateStatusLabel() {
         String modeText = canvas.mode.toUpperCase();
         String editorText = editorMode.equals("game") ? "GAME SCRIPTS" : "MOD CREATOR";
         statusLabel.setText("MODE: " + modeText + " | EDITOR: " + editorText);
@@ -152,19 +151,19 @@ public class NodeEditor extends BaseDialog {
         if(node.inputs.size > 0) {
             for(Node.NodeInput input : node.inputs) {
                 Label label = new Label(input.label + ":");
-                label.setFontScale(1.5f);
+                label.setFontScale(1.2f);
                 dialog.cont.add(label).left().row();
                 TextField field = new TextField(input.value);
                 field.setStyle(new TextField.TextFieldStyle(field.getStyle()));
-                field.getStyle().font.getData().setScale(1.5f);
-                dialog.cont.add(field).fillX().height(100f).row();
+                field.getStyle().font.getData().setScale(1.2f);
+                dialog.cont.add(field).fillX().height(80f).row();
                 field.changed(() -> {
                     input.value = field.getText();
                     node.value = buildNodeValue(node);
                 });
             }
         }
-        dialog.buttons.button("DONE", dialog::hide).size(300f, 100f);
+        dialog.buttons.button("DONE", dialog::hide).size(300f, 80f);
         dialog.show();
     }
 
@@ -180,48 +179,67 @@ public class NodeEditor extends BaseDialog {
     private void saveScript() {
         BaseDialog dialog = new BaseDialog("Save Script");
         Label label = new Label("Script Name:");
-        label.setFontScale(1.5f);
+        label.setFontScale(1.3f);
         dialog.cont.add(label).row();
         TextField nameField = new TextField(currentScriptName);
         nameField.setStyle(new TextField.TextFieldStyle(nameField.getStyle()));
-        nameField.getStyle().font.getData().setScale(1.5f);
-        dialog.cont.add(nameField).size(500f, 100f).pad(15f).row();
+        nameField.getStyle().font.getData().setScale(1.3f);
+        dialog.cont.add(nameField).size(500f, 80f).pad(15f).row();
         dialog.buttons.button("SAVE", () -> {
             currentScriptName = nameField.getText();
             try {
-                Seq<NodeData> nodeDataList = new Seq<>();
-                for(Node node : canvas.nodes) {
-                    NodeData data = new NodeData();
-                    data.id = node.id;
-                    data.type = node.type;
-                    data.label = node.label;
-                    data.x = node.x;
-                    data.y = node.y;
-                    data.value = node.value;
-                    data.color = node.color.toString();
-                    data.inputValues = new Seq<>();
-                    for(Node.NodeInput input : node.inputs) {
-                        data.inputValues.add(input.value);
+                StringBuilder json = new StringBuilder();
+                json.append("[\n");
+                
+                for(int i = 0; i < canvas.nodes.size; i++) {
+                    Node node = canvas.nodes.get(i);
+                    json.append("  {\n");
+                    json.append("    \"id\": \"").append(node.id).append("\",\n");
+                    json.append("    \"type\": \"").append(node.type).append("\",\n");
+                    json.append("    \"label\": \"").append(node.label).append("\",\n");
+                    json.append("    \"x\": ").append(node.x).append(",\n");
+                    json.append("    \"y\": ").append(node.y).append(",\n");
+                    json.append("    \"value\": \"").append(node.value.replace("\"", "\\\"")).append("\",\n");
+                    json.append("    \"color\": \"").append(node.color.toString()).append("\",\n");
+                    
+                    json.append("    \"inputValues\": [");
+                    for(int j = 0; j < node.inputs.size; j++) {
+                        json.append("\"").append(node.inputs.get(j).value.replace("\"", "\\\"")).append("\"");
+                        if(j < node.inputs.size - 1) json.append(", ");
                     }
-                    data.connectionIds = new Seq<>();
-                    for(Node conn : node.connections) {
-                        data.connectionIds.add(conn.id);
+                    json.append("],\n");
+                    
+                    json.append("    \"connectionIds\": [");
+                    for(int j = 0; j < node.connections.size; j++) {
+                        json.append("\"").append(node.connections.get(j).id).append("\"");
+                        if(j < node.connections.size - 1) json.append(", ");
                     }
-                    nodeDataList.add(data);
+                    json.append("]\n");
+                    
+                    json.append("  }");
+                    if(i < canvas.nodes.size - 1) json.append(",");
+                    json.append("\n");
                 }
-                String json = new Json().toJson(nodeDataList);
+                
+                json.append("]");
+                
                 String savePath = editorMode.equals("game") ? "mods/studio-scripts/" : "mods/studio-mods/";
-                Core.files.local(savePath).mkdirs();
-                Core.files.local(savePath + currentScriptName + ".json").writeString(json);
+                Fi saveFolder = Core.files.local(savePath);
+                saveFolder.mkdirs();
+                
+                Fi saveFile = saveFolder.child(currentScriptName + ".json");
+                saveFile.writeString(json.toString());
+                
                 statusLabel.setText("Saved: " + currentScriptName);
-                Vars.ui.showInfoFade("Saved successfully!");
+                Vars.ui.showInfoFade("Saved to: " + saveFile.path());
+                Log.info("Saved to: " + saveFile.path());
                 dialog.hide();
             } catch(Exception e) {
                 Log.err("Save failed", e);
                 Vars.ui.showInfoFade("Save failed: " + e.getMessage());
             }
-        }).size(250f, 100f);
-        dialog.buttons.button("CANCEL", dialog::hide).size(250f, 100f);
+        }).size(250f, 80f);
+        dialog.buttons.button("CANCEL", dialog::hide).size(250f, 80f);
         dialog.show();
     }
 
@@ -245,7 +263,7 @@ public class NodeEditor extends BaseDialog {
 
         if(scripts.size == 0) {
             Label label = new Label("No saved scripts found");
-            label.setFontScale(1.5f);
+            label.setFontScale(1.3f);
             dialog.cont.add(label).row();
         } else {
             for(String scriptName : scripts) {
@@ -281,78 +299,78 @@ public class NodeEditor extends BaseDialog {
             Fi file = Core.files.local(loadPath + name + ".json");
 
             if(!file.exists()) {
-                throw new Exception("File not found: " + name);
+                throw new Exception("File not found");
             }
 
             String json = file.readString();
-            
             if(json == null || json.trim().isEmpty()) {
                 throw new Exception("File is empty");
-            }
-
-            Json jsonParser = new Json();
-            jsonParser.setIgnoreUnknownFields(true);
-
-            @SuppressWarnings("unchecked")
-            Seq<Object> rawList = jsonParser.fromJson(Seq.class, json);
-
-            if(rawList == null || rawList.size == 0) {
-                throw new Exception("No nodes in file");
             }
 
             canvas.nodes.clear();
             Seq<Node> loadedNodes = new Seq<>();
             ObjectMap<String, String> idMap = new ObjectMap<>();
 
-            for(Object rawObj : rawList) {
-                if(!(rawObj instanceof ObjectMap)) continue;
-                
-                @SuppressWarnings("unchecked")
-                ObjectMap<String, Object> raw = (ObjectMap<String, Object>) rawObj;
+            json = json.trim();
+            if(!json.startsWith("[")) {
+                throw new Exception("Invalid JSON format");
+            }
+
+            json = json.substring(1, json.length() - 1);
+            String[] nodeStrings = json.split("\\},\\s*\\{");
+
+            for(String nodeStr : nodeStrings) {
+                nodeStr = nodeStr.trim();
+                if(!nodeStr.startsWith("{")) nodeStr = "{" + nodeStr;
+                if(!nodeStr.endsWith("}")) nodeStr = nodeStr + "}";
 
                 Node node = new Node();
                 node.id = java.util.UUID.randomUUID().toString();
-                node.type = raw.get("type") != null ? raw.get("type").toString() : "action";
-                node.label = raw.get("label") != null ? raw.get("label").toString() : "Unknown";
-                node.x = raw.get("x") != null ? ((Number)raw.get("x")).floatValue() : 0f;
-                node.y = raw.get("y") != null ? ((Number)raw.get("y")).floatValue() : 0f;
-                node.value = raw.get("value") != null ? raw.get("value").toString() : "";
                 
-                String colorStr = raw.get("color") != null ? raw.get("color").toString() : "gray";
+                String oldId = extractValue(nodeStr, "id");
+                node.type = extractValue(nodeStr, "type");
+                node.label = extractValue(nodeStr, "label");
+                
                 try {
-                    node.color = Color.valueOf(colorStr);
+                    node.x = Float.parseFloat(extractValue(nodeStr, "x"));
+                    node.y = Float.parseFloat(extractValue(nodeStr, "y"));
+                } catch(Exception e) {
+                    node.x = 0;
+                    node.y = 0;
+                }
+                
+                node.value = extractValue(nodeStr, "value");
+                
+                try {
+                    node.color = Color.valueOf(extractValue(nodeStr, "color"));
                 } catch(Exception e) {
                     node.color = Color.gray;
                 }
 
                 node.setupInputs();
 
-                if(raw.get("inputValues") != null && raw.get("inputValues") instanceof Seq) {
-                    @SuppressWarnings("unchecked")
-                    Seq<Object> inputVals = (Seq<Object>)raw.get("inputValues");
-                    for(int i = 0; i < Math.min(node.inputs.size, inputVals.size); i++) {
-                        node.inputs.get(i).value = inputVals.get(i).toString();
+                String inputValuesStr = extractArray(nodeStr, "inputValues");
+                if(inputValuesStr != null && !inputValuesStr.isEmpty()) {
+                    String[] values = inputValuesStr.split("\",\\s*\"");
+                    for(int i = 0; i < Math.min(node.inputs.size, values.length); i++) {
+                        String val = values[i].replace("\"", "").replace("\\\"", "\"").trim();
+                        node.inputs.get(i).value = val;
                     }
                 }
 
-                String oldId = raw.get("id") != null ? raw.get("id").toString() : node.id;
                 idMap.put(oldId, node.id);
-
                 loadedNodes.add(node);
             }
 
-            for(int i = 0; i < rawList.size; i++) {
-                if(!(rawList.get(i) instanceof ObjectMap)) continue;
-                
-                @SuppressWarnings("unchecked")
-                ObjectMap<String, Object> raw = (ObjectMap<String, Object>)rawList.get(i);
+            for(int i = 0; i < nodeStrings.length; i++) {
+                String nodeStr = nodeStrings[i];
                 Node node = loadedNodes.get(i);
 
-                if(raw.get("connectionIds") != null && raw.get("connectionIds") instanceof Seq) {
-                    @SuppressWarnings("unchecked")
-                    Seq<Object> connIds = (Seq<Object>)raw.get("connectionIds");
-                    for(Object connIdObj : connIds) {
-                        String oldConnId = connIdObj.toString();
+                String connIdsStr = extractArray(nodeStr, "connectionIds");
+                if(connIdsStr != null && !connIdsStr.isEmpty()) {
+                    String[] connIds = connIdsStr.split("\",\\s*\"");
+                    for(String oldConnId : connIds) {
+                        oldConnId = oldConnId.replace("\"", "").trim();
                         String newConnId = idMap.get(oldConnId);
                         if(newConnId != null) {
                             Node target = loadedNodes.find(n -> n.id.equals(newConnId));
@@ -368,12 +386,57 @@ public class NodeEditor extends BaseDialog {
             currentScriptName = name;
             statusLabel.setText("Loaded: " + name + " (" + canvas.nodes.size + " nodes)");
             Vars.ui.showInfoFade("Loaded " + canvas.nodes.size + " nodes!");
+            Log.info("Successfully loaded: " + name);
 
         } catch(Exception e) {
             Log.err("Load failed: " + name, e);
             Vars.ui.showInfoFade("Load failed: " + e.getMessage());
             statusLabel.setText("Load FAILED!");
         }
+    }
+
+    private String extractValue(String json, String key) {
+        String search = "\"" + key + "\":";
+        int start = json.indexOf(search);
+        if(start == -1) return "";
+        
+        start += search.length();
+        while(start < json.length() && (json.charAt(start) == ' ' || json.charAt(start) == '\n')) start++;
+        
+        if(json.charAt(start) == '"') {
+            start++;
+            int end = start;
+            while(end < json.length()) {
+                if(json.charAt(end) == '"' && (end == 0 || json.charAt(end - 1) != '\\')) {
+                    return json.substring(start, end);
+                }
+                end++;
+            }
+        } else {
+            int end = start;
+            while(end < json.length() && json.charAt(end) != ',' && json.charAt(end) != '\n' && json.charAt(end) != '}') {
+                end++;
+            }
+            return json.substring(start, end).trim();
+        }
+        
+        return "";
+    }
+
+    private String extractArray(String json, String key) {
+        String search = "\"" + key + "\":";
+        int start = json.indexOf(search);
+        if(start == -1) return "";
+        
+        start += search.length();
+        while(start < json.length() && json.charAt(start) != '[') start++;
+        if(start >= json.length()) return "";
+        
+        start++;
+        int end = json.indexOf(']', start);
+        if(end == -1) return "";
+        
+        return json.substring(start, end).trim();
     }
 
     private void runScript() {
@@ -411,8 +474,12 @@ public class NodeEditor extends BaseDialog {
                 hasModFolder = true;
                 String folderName = node.inputs.get(0).value;
                 Fi modFolder = Core.files.local("mods/" + folderName);
-                modFolder.mkdirs();
-                Log.info("Created mod folder: " + modFolder.path());
+                
+                if(!modFolder.exists()) {
+                    modFolder.mkdirs();
+                    Log.info("Created mod folder: " + modFolder.path());
+                    Vars.ui.showInfoFade("Created: " + modFolder.path());
+                }
 
                 for(Node child : node.connections) {
                     executeModNode(child, modFolder);
@@ -432,8 +499,10 @@ public class NodeEditor extends BaseDialog {
         if(node.label.equals("Create Folder")) {
             String folderName = node.inputs.get(0).value;
             Fi folder = parentFolder.child(folderName);
-            folder.mkdirs();
-            Log.info("Created folder: " + folder.path());
+            if(!folder.exists()) {
+                folder.mkdirs();
+                Log.info("Created folder: " + folder.path());
+            }
             for(Node child : node.connections) {
                 executeModNode(child, folder);
             }
@@ -497,16 +566,5 @@ public class NodeEditor extends BaseDialog {
         for(Node child : node.connections) {
             executeModNode(child, parentFolder);
         }
-    }
-
-    public static class NodeData {
-        public String id;
-        public String type;
-        public String label;
-        public float x, y;
-        public String value;
-        public String color;
-        public Seq<String> connectionIds = new Seq<>();
-        public Seq<String> inputValues = new Seq<>();
     }
 }
