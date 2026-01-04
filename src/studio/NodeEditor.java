@@ -148,37 +148,37 @@ public class NodeEditor extends BaseDialog {
         if(node == null) return;
         BaseDialog dialog = new BaseDialog("Edit: " + node.label);
         dialog.cont.defaults().size(600f, 80f).pad(10f);
-        
+
         if(node.inputs.size > 0) {
             for(int i = 0; i < node.inputs.size; i++) {
                 Node.NodeInput input = node.inputs.get(i);
-                
+
                 if(node.label.equals("Spawn Unit") && input.label.equals("Spawn Location")) {
                     Label label = new Label(input.label + ":");
                     label.setFontScale(1.2f);
                     dialog.cont.add(label).left().row();
-                    
+
                     ButtonGroup<TextButton> group = new ButtonGroup<>();
                     Table locTable = new Table();
-                    
+
                     TextButton playerBtn = new TextButton("At Player", Styles.togglet);
                     TextButton coreBtn = new TextButton("At Core", Styles.togglet);
                     TextButton coordBtn = new TextButton("At Coordinates", Styles.togglet);
-                    
+
                     group.add(playerBtn, coreBtn, coordBtn);
-                    
+
                     if(input.value.equals("At Player")) playerBtn.setChecked(true);
                     else if(input.value.equals("At Core")) coreBtn.setChecked(true);
                     else coordBtn.setChecked(true);
-                    
+
                     playerBtn.clicked(() -> input.value = "At Player");
                     coreBtn.clicked(() -> input.value = "At Core");
                     coordBtn.clicked(() -> input.value = "At Coordinates");
-                    
+
                     locTable.add(playerBtn).width(180f).height(60f);
                     locTable.add(coreBtn).width(180f).height(60f);
                     locTable.add(coordBtn).width(220f).height(60f);
-                    
+
                     dialog.cont.add(locTable).row();
                 }
                 else if(node.label.equals("Spawn Unit") && (input.label.equals("X Coordinate") || input.label.equals("Y Coordinate"))) {
@@ -226,7 +226,7 @@ public class NodeEditor extends BaseDialog {
             try {
                 StringBuilder json = new StringBuilder();
                 json.append("[\n");
-                
+
                 for(int i = 0; i < canvas.nodes.size; i++) {
                     Node node = canvas.nodes.get(i);
                     json.append("  {\n");
@@ -237,35 +237,35 @@ public class NodeEditor extends BaseDialog {
                     json.append("    \"y\": ").append(node.y).append(",\n");
                     json.append("    \"value\": \"").append(node.value.replace("\"", "\\\"")).append("\",\n");
                     json.append("    \"color\": \"").append(node.color.toString()).append("\",\n");
-                    
+
                     json.append("    \"inputValues\": [");
                     for(int j = 0; j < node.inputs.size; j++) {
                         json.append("\"").append(node.inputs.get(j).value.replace("\"", "\\\"")).append("\"");
                         if(j < node.inputs.size - 1) json.append(", ");
                     }
                     json.append("],\n");
-                    
+
                     json.append("    \"connectionIds\": [");
                     for(int j = 0; j < node.connections.size; j++) {
                         json.append("\"").append(node.connections.get(j).id).append("\"");
                         if(j < node.connections.size - 1) json.append(", ");
                     }
                     json.append("]\n");
-                    
+
                     json.append("  }");
                     if(i < canvas.nodes.size - 1) json.append(",");
                     json.append("\n");
                 }
-                
+
                 json.append("]");
-                
+
                 String savePath = editorMode.equals("game") ? "mods/studio-scripts/" : "mods/studio-mods/";
                 Fi saveFolder = Core.files.local(savePath);
                 saveFolder.mkdirs();
-                
+
                 Fi saveFile = saveFolder.child(currentScriptName + ".json");
                 saveFile.writeString(json.toString());
-                
+
                 statusLabel.setText("Saved: " + currentScriptName);
                 Vars.ui.showInfoFade("Saved to: " + saveFile.path());
                 Log.info("Saved to: " + saveFile.path());
@@ -362,11 +362,11 @@ public class NodeEditor extends BaseDialog {
 
                 Node node = new Node();
                 node.id = java.util.UUID.randomUUID().toString();
-                
+
                 String oldId = extractValue(nodeStr, "id");
                 node.type = extractValue(nodeStr, "type");
                 node.label = extractValue(nodeStr, "label");
-                
+
                 try {
                     node.x = Float.parseFloat(extractValue(nodeStr, "x"));
                     node.y = Float.parseFloat(extractValue(nodeStr, "y"));
@@ -374,9 +374,9 @@ public class NodeEditor extends BaseDialog {
                     node.x = 0;
                     node.y = 0;
                 }
-                
+
                 node.value = extractValue(nodeStr, "value");
-                
+
                 try {
                     node.color = Color.valueOf(extractValue(nodeStr, "color"));
                 } catch(Exception e) {
@@ -435,10 +435,10 @@ public class NodeEditor extends BaseDialog {
         String search = "\"" + key + "\":";
         int start = json.indexOf(search);
         if(start == -1) return "";
-        
+
         start += search.length();
         while(start < json.length() && (json.charAt(start) == ' ' || json.charAt(start) == '\n')) start++;
-        
+
         if(json.charAt(start) == '"') {
             start++;
             int end = start;
@@ -455,7 +455,7 @@ public class NodeEditor extends BaseDialog {
             }
             return json.substring(start, end).trim();
         }
-        
+
         return "";
     }
 
@@ -463,15 +463,15 @@ public class NodeEditor extends BaseDialog {
         String search = "\"" + key + "\":";
         int start = json.indexOf(search);
         if(start == -1) return "";
-        
+
         start += search.length();
         while(start < json.length() && json.charAt(start) != '[') start++;
         if(start >= json.length()) return "";
-        
+
         start++;
         int end = json.indexOf(']', start);
         if(end == -1) return "";
-        
+
         return json.substring(start, end).trim();
     }
 
@@ -501,16 +501,15 @@ public class NodeEditor extends BaseDialog {
         } else {
             statusLabel.setText("Script executed!");
         }
-    }
-
-    private void executeModCreation() {
+    }private void executeModCreation() {
         boolean hasModFolder = false;
         for(Node node : canvas.nodes) {
             if(node.label.equals("Create Mod Folder")) {
                 hasModFolder = true;
                 String folderName = node.inputs.get(0).value;
-                Fi modFolder = Core.files.local("mods/" + folderName);
                 
+                Fi modFolder = Vars.modDirectory.child(folderName);
+
                 if(!modFolder.exists()) {
                     modFolder.mkdirs();
                     Log.info("Created mod folder: " + modFolder.path());
@@ -522,7 +521,7 @@ public class NodeEditor extends BaseDialog {
                 }
             }
         }
-        
+
         if(!hasModFolder) {
             Vars.ui.showInfoFade("Add 'Create Mod Folder' node first!");
         } else {
@@ -532,145 +531,138 @@ public class NodeEditor extends BaseDialog {
     }
 
     private void executeModNode(Node node, Fi currentFolder) {
-    try {
-        Log.info("Executing mod node: " + node.label + " in folder: " + currentFolder.path());
+        try {
+            Log.info("Executing mod node: " + node.label + " in folder: " + currentFolder.path());
 
-        if(node.label.equals("Create Folder")) {
-            String folderName = node.inputs.get(0).value;
-            Fi newFolder = currentFolder.child(folderName);
-            
-            // Make sure it exists as a directory
-            if(!newFolder.exists()) {
-                newFolder.mkdirs();
-                Log.info("Created folder: " + newFolder.path());
-            }
-            
-            // Verify it's actually a directory
-            if(newFolder.isDirectory()) {
-                Log.info("Verified folder exists: " + newFolder.path());
-            } else {
-                Log.err("ERROR: " + newFolder.path() + " is not a directory!");
-            }
+            if(node.label.equals("Create Folder")) {
+                String folderName = node.inputs.get(0).value;
+                Fi newFolder = currentFolder.child(folderName);
+                
+                if(!newFolder.exists()) {
+                    newFolder.mkdirs();
+                    Log.info("Created folder: " + newFolder.path());
+                }
+                
+                if(newFolder.isDirectory()) {
+                    Log.info("Verified folder exists: " + newFolder.path());
+                } else {
+                    Log.err("ERROR: " + newFolder.path() + " is not a directory!");
+                }
 
-            for(Node child : node.connections) {
-                executeModNode(child, newFolder);
+                for(Node child : node.connections) {
+                    executeModNode(child, newFolder);
+                }
             }
+            else if(node.label.equals("Create mod.hjson")) {
+                String modName = node.inputs.get(0).value;
+                String displayName = node.inputs.get(1).value;
+                String author = node.inputs.get(2).value;
+
+                String hjson = "name: " + modName + "\n" +
+                              "displayName: " + displayName + "\n" +
+                              "author: " + author + "\n" +
+                              "version: 1.0\n" +
+                              "minGameVersion: 154\n";
+
+                Fi hjsonFile = currentFolder.child("mod.hjson");
+                
+                if(!currentFolder.exists()) {
+                    currentFolder.mkdirs();
+                    Log.info("Created parent directory: " + currentFolder.path());
+                }
+                
+                hjsonFile.writeString(hjson);
+                
+                if(hjsonFile.exists()) {
+                    Log.info("✓ VERIFIED: Created mod.hjson at: " + hjsonFile.path());
+                    Log.info("  File size: " + hjsonFile.length() + " bytes");
+                    Log.info("  Java file: " + hjsonFile.file().getAbsolutePath());
+                } else {
+                    Log.err("✗ FAILED: mod.hjson was NOT created at: " + hjsonFile.path());
+                }
+            }
+            else if(node.label.equals("Create Block File")) {
+                String blockName = node.inputs.get(0).value;
+                String type = node.inputs.get(1).value;
+                String health = node.inputs.get(2).value;
+                String size = node.inputs.get(3).value;
+
+                String hjson = "type: " + type + "\n" +
+                              "health: " + health + "\n" +
+                              "size: " + size + "\n";
+
+                Fi blockFile = currentFolder.child(blockName + ".hjson");
+                
+                if(!currentFolder.exists()) {
+                    currentFolder.mkdirs();
+                    Log.info("Created parent directory: " + currentFolder.path());
+                }
+                
+                blockFile.writeString(hjson);
+                
+                if(blockFile.exists()) {
+                    Log.info("✓ VERIFIED: Created block file at: " + blockFile.path());
+                    Log.info("  File size: " + blockFile.length() + " bytes");
+                    Log.info("  Java file: " + blockFile.file().getAbsolutePath());
+                } else {
+                    Log.err("✗ FAILED: Block file was NOT created at: " + blockFile.path());
+                }
+            }
+            else if(node.label.equals("Create Unit File")) {
+                String unitName = node.inputs.get(0).value;
+                String type = node.inputs.get(1).value;
+                String health = node.inputs.get(2).value;
+                String speed = node.inputs.get(3).value;
+
+                String hjson = "type: " + type + "\n" +
+                              "health: " + health + "\n" +
+                              "speed: " + speed + "\n";
+
+                Fi unitFile = currentFolder.child(unitName + ".hjson");
+                
+                if(!currentFolder.exists()) {
+                    currentFolder.mkdirs();
+                    Log.info("Created parent directory: " + currentFolder.path());
+                }
+                
+                unitFile.writeString(hjson);
+                
+                if(unitFile.exists()) {
+                    Log.info("✓ VERIFIED: Created unit file at: " + unitFile.path());
+                    Log.info("  File size: " + unitFile.length() + " bytes");
+                    Log.info("  Java file: " + unitFile.file().getAbsolutePath());
+                } else {
+                    Log.err("✗ FAILED: Unit file was NOT created at: " + unitFile.path());
+                }
+            }
+            else if(node.label.equals("Create Item File")) {
+                String itemName = node.inputs.get(0).value;
+                String color = node.inputs.get(1).value;
+                String cost = node.inputs.get(2).value;
+
+                String hjson = "color: " + color + "\n" +
+                              "cost: " + cost + "\n";
+
+                Fi itemFile = currentFolder.child(itemName + ".hjson");
+                
+                if(!currentFolder.exists()) {
+                    currentFolder.mkdirs();
+                    Log.info("Created parent directory: " + currentFolder.path());
+                }
+                
+                itemFile.writeString(hjson);
+                
+                if(itemFile.exists()) {
+                    Log.info("✓ VERIFIED: Created item file at: " + itemFile.path());
+                    Log.info("  File size: " + itemFile.length() + " bytes");
+                    Log.info("  Java file: " + itemFile.file().getAbsolutePath());
+                } else {
+                    Log.err("✗ FAILED: Item file was NOT created at: " + itemFile.path());
+                }
+            }
+        } catch(Exception e) {
+            Log.err("Error in executeModNode: " + node.label, e);
+            Vars.ui.showInfoFade("Error creating " + node.label + ": " + e.getMessage());
         }
-        else if(node.label.equals("Create mod.hjson")) {
-            String modName = node.inputs.get(0).value;
-            String displayName = node.inputs.get(1).value;
-            String author = node.inputs.get(2).value;
-
-            String hjson = "name: " + modName + "\n" +
-                          "displayName: " + displayName + "\n" +
-                          "author: " + author + "\n" +
-                          "version: 1.0\n" +
-                          "minGameVersion: 154\n";
-
-            Fi hjsonFile = currentFolder.child("mod.hjson");
-            
-            // Ensure parent directory exists
-            if(!currentFolder.exists()) {
-                currentFolder.mkdirs();
-                Log.info("Created parent directory: " + currentFolder.path());
-            }
-            
-            hjsonFile.writeString(hjson);
-            
-            // Verify file was created
-            if(hjsonFile.exists()) {
-                Log.info("✓ VERIFIED: Created mod.hjson at: " + hjsonFile.path());
-                Log.info("  File size: " + hjsonFile.length() + " bytes");
-            } else {
-                Log.err("✗ FAILED: mod.hjson was NOT created at: " + hjsonFile.path());
-            }
-        }
-        else if(node.label.equals("Create Block File")) {
-            String blockName = node.inputs.get(0).value;
-            String type = node.inputs.get(1).value;
-            String health = node.inputs.get(2).value;
-            String size = node.inputs.get(3).value;
-
-            String hjson = "type: " + type + "\n" +
-                          "health: " + health + "\n" +
-                          "size: " + size + "\n";
-
-            Fi blockFile = currentFolder.child(blockName + ".hjson");
-            
-            // Ensure parent directory exists
-            if(!currentFolder.exists()) {
-                currentFolder.mkdirs();
-                Log.info("Created parent directory: " + currentFolder.path());
-            }
-            
-            blockFile.writeString(hjson);
-            
-            // Verify file was created
-            if(blockFile.exists()) {
-                Log.info("✓ VERIFIED: Created block file at: " + blockFile.path());
-                Log.info("  File size: " + blockFile.length() + " bytes");
-                Log.info("  Full path: " + blockFile.absolutePath());
-            } else {
-                Log.err("✗ FAILED: Block file was NOT created at: " + blockFile.path());
-            }
-        }
-        else if(node.label.equals("Create Unit File")) {
-            String unitName = node.inputs.get(0).value;
-            String type = node.inputs.get(1).value;
-            String health = node.inputs.get(2).value;
-            String speed = node.inputs.get(3).value;
-
-            String hjson = "type: " + type + "\n" +
-                          "health: " + health + "\n" +
-                          "speed: " + speed + "\n";
-
-            Fi unitFile = currentFolder.child(unitName + ".hjson");
-            
-            // Ensure parent directory exists
-            if(!currentFolder.exists()) {
-                currentFolder.mkdirs();
-                Log.info("Created parent directory: " + currentFolder.path());
-            }
-            
-            unitFile.writeString(hjson);
-            
-            // Verify file was created
-            if(unitFile.exists()) {
-                Log.info("✓ VERIFIED: Created unit file at: " + unitFile.path());
-                Log.info("  File size: " + unitFile.length() + " bytes");
-            } else {
-                Log.err("✗ FAILED: Unit file was NOT created at: " + unitFile.path());
-            }
-        }
-        else if(node.label.equals("Create Item File")) {
-            String itemName = node.inputs.get(0).value;
-            String color = node.inputs.get(1).value;
-            String cost = node.inputs.get(2).value;
-
-            String hjson = "color: " + color + "\n" +
-                          "cost: " + cost + "\n";
-
-            Fi itemFile = currentFolder.child(itemName + ".hjson");
-            
-            // Ensure parent directory exists
-            if(!currentFolder.exists()) {
-                currentFolder.mkdirs();
-                Log.info("Created parent directory: " + currentFolder.path());
-            }
-            
-            itemFile.writeString(hjson);
-            
-            // Verify file was created
-            if(itemFile.exists()) {
-                Log.info("✓ VERIFIED: Created item file at: " + itemFile.path());
-                Log.info("  File size: " + itemFile.length() + " bytes");
-            } else {
-                Log.err("✗ FAILED: Item file was NOT created at: " + itemFile.path());
-            }
-        }
-    } catch(Exception e) {
-        Log.err("Error in executeModNode: " + node.label, e);
-        Vars.ui.showInfoFade("Error creating " + node.label + ": " + e.getMessage());
     }
-  }
 }
