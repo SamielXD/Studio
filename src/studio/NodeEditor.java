@@ -148,19 +148,55 @@ public class NodeEditor extends BaseDialog {
         if(node == null) return;
         BaseDialog dialog = new BaseDialog("Edit: " + node.label);
         dialog.cont.defaults().size(600f, 80f).pad(10f);
+        
         if(node.inputs.size > 0) {
-            for(Node.NodeInput input : node.inputs) {
-                Label label = new Label(input.label + ":");
-                label.setFontScale(1.2f);
-                dialog.cont.add(label).left().row();
-                TextField field = new TextField(input.value);
-                field.setStyle(new TextField.TextFieldStyle(field.getStyle()));
-                field.getStyle().font.getData().setScale(1.2f);
-                dialog.cont.add(field).fillX().height(80f).row();
-                field.changed(() -> {
-                    input.value = field.getText();
-                    node.value = buildNodeValue(node);
-                });
+            for(int i = 0; i < node.inputs.size; i++) {
+                Node.NodeInput input = node.inputs.get(i);
+                
+                if(node.label.equals("Spawn Unit") && input.label.equals("Spawn Location")) {
+                    Label label = new Label(input.label + ":");
+                    label.setFontScale(1.2f);
+                    dialog.cont.add(label).left().row();
+                    
+                    ButtonGroup<TextButton> group = new ButtonGroup<>();
+                    Table locTable = new Table();
+                    
+                    TextButton playerBtn = new TextButton("At Player", Styles.togglet);
+                    TextButton coreBtn = new TextButton("At Core", Styles.togglet);
+                    TextButton coordBtn = new TextButton("At Coordinates", Styles.togglet);
+                    
+                    group.add(playerBtn, coreBtn, coordBtn);
+                    
+                    if(input.value.equals("At Player")) playerBtn.setChecked(true);
+                    else if(input.value.equals("At Core")) coreBtn.setChecked(true);
+                    else coordBtn.setChecked(true);
+                    
+                    playerBtn.clicked(() -> input.value = "At Player");
+                    coreBtn.clicked(() -> input.value = "At Core");
+                    coordBtn.clicked(() -> input.value = "At Coordinates");
+                    
+                    locTable.add(playerBtn).width(180f).height(60f);
+                    locTable.add(coreBtn).width(180f).height(60f);
+                    locTable.add(coordBtn).width(220f).height(60f);
+                    
+                    dialog.cont.add(locTable).row();
+                }
+                else if(node.label.equals("Spawn Unit") && (input.label.equals("X Coordinate") || input.label.equals("Y Coordinate"))) {
+                    continue;
+                }
+                else {
+                    Label label = new Label(input.label + ":");
+                    label.setFontScale(1.2f);
+                    dialog.cont.add(label).left().row();
+                    TextField field = new TextField(input.value);
+                    field.setStyle(new TextField.TextFieldStyle(field.getStyle()));
+                    field.getStyle().font.getData().setScale(1.2f);
+                    dialog.cont.add(field).fillX().height(80f).row();
+                    field.changed(() -> {
+                        input.value = field.getText();
+                        node.value = buildNodeValue(node);
+                    });
+                }
             }
         }
         dialog.buttons.button("DONE", dialog::hide).size(300f, 80f);
@@ -495,16 +531,19 @@ public class NodeEditor extends BaseDialog {
         }
     }
 
-    private void executeModNode(Node node, Fi parentFolder) {
+    private void executeModNode(Node node, Fi currentFolder) {
+        Log.info("Executing mod node: " + node.label + " in folder: " + currentFolder.path());
+        
         if(node.label.equals("Create Folder")) {
             String folderName = node.inputs.get(0).value;
-            Fi folder = parentFolder.child(folderName);
-            if(!folder.exists()) {
-                folder.mkdirs();
-                Log.info("Created folder: " + folder.path());
+            Fi newFolder = currentFolder.child(folderName);
+            if(!newFolder.exists()) {
+                newFolder.mkdirs();
+                Log.info("Created folder: " + newFolder.path());
             }
+            
             for(Node child : node.connections) {
-                executeModNode(child, folder);
+                executeModNode(child, newFolder);
             }
         }
         else if(node.label.equals("Create mod.hjson")) {
@@ -518,7 +557,7 @@ public class NodeEditor extends BaseDialog {
                           "version: 1.0\n" +
                           "minGameVersion: 154\n";
 
-            Fi hjsonFile = parentFolder.child("mod.hjson");
+            Fi hjsonFile = currentFolder.child("mod.hjson");
             hjsonFile.writeString(hjson);
             Log.info("Created mod.hjson: " + hjsonFile.path());
         }
@@ -532,7 +571,7 @@ public class NodeEditor extends BaseDialog {
                           "health: " + health + "\n" +
                           "size: " + size + "\n";
 
-            Fi blockFile = parentFolder.child(blockName + ".hjson");
+            Fi blockFile = currentFolder.child(blockName + ".hjson");
             blockFile.writeString(hjson);
             Log.info("Created block file: " + blockFile.path());
         }
@@ -546,7 +585,7 @@ public class NodeEditor extends BaseDialog {
                           "health: " + health + "\n" +
                           "speed: " + speed + "\n";
 
-            Fi unitFile = parentFolder.child(unitName + ".hjson");
+            Fi unitFile = currentFolder.child(unitName + ".hjson");
             unitFile.writeString(hjson);
             Log.info("Created unit file: " + unitFile.path());
         }
@@ -558,13 +597,9 @@ public class NodeEditor extends BaseDialog {
             String hjson = "color: " + color + "\n" +
                           "cost: " + cost + "\n";
 
-            Fi itemFile = parentFolder.child(itemName + ".hjson");
+            Fi itemFile = currentFolder.child(itemName + ".hjson");
             itemFile.writeString(hjson);
             Log.info("Created item file: " + itemFile.path());
-        }
-
-        for(Node child : node.connections) {
-            executeModNode(child, parentFolder);
         }
     }
 }
