@@ -1,3 +1,4 @@
+
 package studio;
 
 import arc.*;
@@ -35,6 +36,10 @@ public class StudioMod extends Mod {
     public static Color buttonColor = Color.white;
     public static float buttonOpacity = 0.8f;
     public static boolean showLabels = true;
+    
+    public static float labelScale = 1.0f;
+    public static float infoScale = 1.0f;
+    public static float typeScale = 1.0f;
 
     public StudioMod() {
         Log.info("Studio - Visual Scripting System loading...");
@@ -106,6 +111,15 @@ public class StudioMod extends Mod {
                 if(settings.containsKey("showLabels")) {
                     showLabels = Boolean.parseBoolean(settings.get("showLabels"));
                 }
+                if(settings.containsKey("labelScale")) {
+                    labelScale = Float.parseFloat(settings.get("labelScale"));
+                }
+                if(settings.containsKey("infoScale")) {
+                    infoScale = Float.parseFloat(settings.get("infoScale"));
+                }
+                if(settings.containsKey("typeScale")) {
+                    typeScale = Float.parseFloat(settings.get("typeScale"));
+                }
                 
                 Log.info("Settings loaded!");
             }
@@ -120,7 +134,10 @@ public class StudioMod extends Mod {
             String json = "{\n" +
                 "  \"buttonSize\": " + buttonSize + ",\n" +
                 "  \"buttonOpacity\": " + buttonOpacity + ",\n" +
-                "  \"showLabels\": " + showLabels + "\n" +
+                "  \"showLabels\": " + showLabels + ",\n" +
+                "  \"labelScale\": " + labelScale + ",\n" +
+                "  \"infoScale\": " + infoScale + ",\n" +
+                "  \"typeScale\": " + typeScale + "\n" +
                 "}";
             settingsFile.writeString(json);
             Log.info("Settings saved!");
@@ -229,6 +246,41 @@ public class StudioMod extends Mod {
                 saveSettings();
             });
             table.add(opacitySlider).width(400f).row();
+            
+            table.add("[cyan]═══ TEXT SIZES ═══").padTop(20f).row();
+            
+            Label labelSizeLabel = new Label("Node Label Size: " + String.format("%.1fx", labelScale));
+            table.add(labelSizeLabel).padTop(10f);
+            Slider labelSizeSlider = new Slider(0.5f, 2.0f, 0.1f, false);
+            labelSizeSlider.setValue(labelScale);
+            labelSizeSlider.moved(val -> {
+                labelScale = val;
+                labelSizeLabel.setText("Node Label Size: " + String.format("%.1fx", labelScale));
+                saveSettings();
+            });
+            table.add(labelSizeSlider).width(400f).row();
+            
+            Label infoSizeLabel = new Label("Node Info Size: " + String.format("%.1fx", infoScale));
+            table.add(infoSizeLabel).padTop(10f);
+            Slider infoSizeSlider = new Slider(0.5f, 2.0f, 0.1f, false);
+            infoSizeSlider.setValue(infoScale);
+            infoSizeSlider.moved(val -> {
+                infoScale = val;
+                infoSizeLabel.setText("Node Info Size: " + String.format("%.1fx", infoScale));
+                saveSettings();
+            });
+            table.add(infoSizeSlider).width(400f).row();
+            
+            Label typeSizeLabel = new Label("Node Type Size: " + String.format("%.1fx", typeScale));
+            table.add(typeSizeLabel).padTop(10f);
+            Slider typeSizeSlider = new Slider(0.5f, 2.0f, 0.1f, false);
+            typeSizeSlider.setValue(typeScale);
+            typeSizeSlider.moved(val -> {
+                typeScale = val;
+                typeSizeLabel.setText("Node Type Size: " + String.format("%.1fx", typeScale));
+                saveSettings();
+            });
+            table.add(typeSizeSlider).width(400f).row();
             
             table.add("[cyan]═══ DISPLAY ═══").padTop(20f).row();
             
@@ -372,7 +424,8 @@ public class StudioMod extends Mod {
         Node action = new Node("action", "Spawn Unit", 500f, 0f, Color.blue);
         action.inputs.get(0).value = "dagger";
         action.inputs.get(1).value = "3";
-        action.value = "dagger|3";
+        action.inputs.get(2).value = "At Player";
+        action.value = "dagger|3|At Player";
         event.connections.add(action);
         nodeEditor.canvas.nodes.add(event);
         nodeEditor.canvas.nodes.add(action);
@@ -488,6 +541,7 @@ public class StudioMod extends Mod {
             try {
                 String unitName = node.inputs.get(0).value.toLowerCase().trim();
                 int amount = Integer.parseInt(node.inputs.get(1).value);
+                String spawnLoc = node.inputs.size > 2 ? node.inputs.get(2).value : "At Player";
 
                 UnitType type = Vars.content.units().find(u -> u.name.equals(unitName));
                 if(type == null) {
@@ -496,22 +550,38 @@ public class StudioMod extends Mod {
                 }
 
                 float spawnX = 0f, spawnY = 0f;
-                if(Vars.player != null && Vars.player.team() != null && Vars.player.team().core() != null) {
-                    spawnX = Vars.player.team().core().x;
-                    spawnY = Vars.player.team().core().y;
-                } else if(Vars.player != null && Vars.player.unit() != null) {
-                    spawnX = Vars.player.x;
-                    spawnY = Vars.player.y;
+
+                if(spawnLoc.equals("At Player")) {
+                    if(Vars.player != null && Vars.player.unit() != null) {
+                        spawnX = Vars.player.x;
+                        spawnY = Vars.player.y;
+                    }
+                }
+                else if(spawnLoc.equals("At Core")) {
+                    if(Vars.player != null && Vars.player.team() != null && Vars.player.team().core() != null) {
+                        spawnX = Vars.player.team().core().x + 800f;
+                        spawnY = Vars.player.team().core().y + 800f;
+                    }
+                }
+                else if(spawnLoc.equals("At Coordinates")) {
+                    try {
+                        spawnX = Float.parseFloat(node.inputs.get(3).value) * 8f;
+                        spawnY = Float.parseFloat(node.inputs.get(4).value) * 8f;
+                    } catch(Exception e) {
+                        Log.err("Invalid coordinates", e);
+                        spawnX = 0;
+                        spawnY = 0;
+                    }
                 }
 
                 for(int i = 0; i < amount; i++) {
-                    float offsetX = (float)(Math.random() * 32f - 16f);
-                    float offsetY = (float)(Math.random() * 32f - 16f);
+                    float offsetX = (float)(Math.random() * 64f - 32f);
+                    float offsetY = (float)(Math.random() * 64f - 32f);
                     type.spawn(Vars.player.team(), spawnX + offsetX, spawnY + offsetY);
                 }
 
-                Vars.ui.showInfoFade("Spawned " + amount + "x " + type.name);
-                Log.info("Spawned " + amount + " " + unitName);
+                Vars.ui.showInfoFade("Spawned " + amount + "x " + type.name + " at " + spawnLoc);
+                Log.info("Spawned " + amount + " " + unitName + " at " + spawnLoc);
             } catch(Exception e) {
                 Log.err("Failed to spawn unit", e);
             }
