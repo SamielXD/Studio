@@ -4,6 +4,7 @@ import arc.*;
 import arc.files.*;
 import arc.graphics.*;
 import arc.input.*;
+import arc.math.*;
 import arc.scene.*;
 import arc.scene.event.*;
 import arc.scene.ui.*;
@@ -26,11 +27,13 @@ public class StudioMod extends Mod {
     public static Fi scriptsFolder;
     public static Fi modsRootFolder;
     public static String currentModName = "none";
-    
-    // VARIABLES SYSTEM
     public static ObjectMap<String, String> variables = new ObjectMap<>();
 
     private NodeEditor nodeEditor;
+    private Table floatingButton;
+    private boolean floatingButtonDragging = false;
+    private float floatingButtonX = 100f;
+    private float floatingButtonY = 100f;
 
     public StudioMod() {
         Log.info("Studio - Visual Scripting System loading...");
@@ -50,6 +53,8 @@ public class StudioMod extends Mod {
 
         Events.on(ClientLoadEvent.class, e -> {
             setupUI();
+            setupFloatingButton();
+            setupSettingsButton();
             loadAllScripts();
         });
 
@@ -78,6 +83,86 @@ public class StudioMod extends Mod {
         });
     }
 
+    void setupFloatingButton() {
+        floatingButton = new Table();
+        floatingButton.setSize(120f, 120f);
+        floatingButton.setPosition(floatingButtonX, floatingButtonY);
+        
+        ImageButton button = new ImageButton(Icon.edit);
+        button.getStyle().imageUpColor = Color.cyan;
+        button.setSize(120f, 120f);
+        
+        button.clicked(() -> {
+            if(!floatingButtonDragging) {
+                showStudioMenu();
+            }
+        });
+
+        button.addListener(new InputListener() {
+            float startX, startY;
+            float lastX, lastY;
+            
+            @Override
+            public boolean touchDown(InputEvent event, float x, float y, int pointer, KeyCode btn) {
+                startX = x;
+                startY = y;
+                lastX = floatingButton.x;
+                lastY = floatingButton.y;
+                floatingButtonDragging = false;
+                return true;
+            }
+
+            @Override
+            public void touchDragged(InputEvent event, float x, float y, int pointer) {
+                float dx = x - startX;
+                float dy = y - startY;
+                
+                if(Math.abs(dx) > 10f || Math.abs(dy) > 10f) {
+                    floatingButtonDragging = true;
+                    floatingButton.setPosition(
+                        Mathf.clamp(lastX + dx, 0, Core.graphics.getWidth() - floatingButton.getWidth()),
+                        Mathf.clamp(lastY + dy, 0, Core.graphics.getHeight() - floatingButton.getHeight())
+                    );
+                    floatingButtonX = floatingButton.x;
+                    floatingButtonY = floatingButton.y;
+                }
+            }
+
+            @Override
+            public void touchUp(InputEvent event, float x, float y, int pointer, KeyCode btn) {
+                Timer.schedule(() -> floatingButtonDragging = false, 0.1f);
+            }
+        });
+
+        floatingButton.add(button).size(120f, 120f);
+        floatingButton.touchable = Touchable.enabled;
+        
+        Core.scene.add(floatingButton);
+        floatingButton.toFront();
+    }
+
+    void setupSettingsButton() {
+        Vars.ui.settings.addCategory("Studio", Icon.edit, table -> {
+            table.defaults().size(600f, 80f).pad(10f);
+            
+            table.add("[cyan]Studio Visual Scripting").row();
+            
+            table.button("Open Studio Editor", Icon.edit, () -> {
+                showStudioMenu();
+            }).row();
+            
+            table.button("Script Manager", Icon.book, () -> {
+                showScriptManager();
+            }).row();
+            
+            table.button("Mod Manager", Icon.box, () -> {
+                showModManager();
+            }).row();
+            
+            table.add("[lightgray]Version: 1.0 | Mindustry 154").row();
+        });
+    }
+
     void showStudioMenu() {
         BaseDialog menuDialog = new BaseDialog("Studio");
         menuDialog.cont.defaults().size(500f, 120f).pad(15f);
@@ -103,6 +188,47 @@ public class StudioMod extends Mod {
 
         menuDialog.addCloseButton();
         menuDialog.show();
+    }
+
+    void showScriptManager() {
+        BaseDialog dialog = new BaseDialog("Script Manager");
+        dialog.cont.defaults().size(500f, 100f).pad(10f);
+
+        String loadPath = "mods/studio-scripts/";
+        Fi folder = Core.files.local(loadPath);
+
+        if(!folder.exists()) {
+            folder.mkdirs();
+        }
+
+        Seq<String> scripts = new Seq<>();
+        for(Fi file : folder.list()) {
+            if(file.extension().equals("json")) {
+                scripts.add(file.nameWithoutExtension());
+            }
+        }
+
+        if(scripts.size == 0) {
+            Label label = new Label("[lightgray]No saved scripts found");
+            label.setFontScale(1.3f);
+            dialog.cont.add(label).row();
+        } else {
+            for(String scriptName : scripts) {
+                Table row = new Table();
+                row.button("[cyan]" + scriptName, () -> {
+                    Vars.ui.showInfoText("Script: " + scriptName, "Click Load in editor to use");
+                }).growX();
+                row.button("Delete", Icon.trash, () -> {
+                    deleteScript(scriptName);
+                    dialog.hide();
+                    showScriptManager();
+                }).size(120f, 100f);
+                dialog.cont.add(row).fillX().row();
+            }
+        }
+
+        dialog.addCloseButton();
+        dialog.show();
     }
 
     void showExampleScripts() {
@@ -173,8 +299,18 @@ public class StudioMod extends Mod {
         });
     }
 
+    void deleteScript(String name) {
+        String loadPath = "mods/studio-scripts/";
+        Fi file = Core.files.local(loadPath + name + ".json");
+        if(file.exists()) {
+            file.delete();
+            Vars.ui.showInfoFade("Deleted: " + name);
+        }
+    }
+
     void createExampleHelloWorld() {
         nodeEditor.canvas.nodes.clear();
+        nodeEditor.editorMode = "game";
         Node event = new Node("event", "On Start", 0f, 0f, Color.green);
         Node action = new Node("action", "Message", 500f, 0f, Color.blue);
         action.inputs.get(0).value = "Hello from Studio!";
@@ -187,6 +323,7 @@ public class StudioMod extends Mod {
 
     void createExampleAutoSpawn() {
         nodeEditor.canvas.nodes.clear();
+        nodeEditor.editorMode = "game";
         Node event = new Node("event", "On Wave", 0f, 0f, Color.green);
         Node action = new Node("action", "Spawn Unit", 500f, 0f, Color.blue);
         action.inputs.get(0).value = "dagger";
@@ -204,8 +341,6 @@ public class StudioMod extends Mod {
 
         Node modFolder = new Node("mod", "Create Mod Folder", 0f, 0f, Color.cyan);
         modFolder.inputs.get(0).value = "mymod";
-        modFolder.inputs.get(1).value = "My First Mod";
-        modFolder.inputs.get(2).value = "YourName";
 
         Node modHjson = new Node("mod", "Create mod.hjson", 500f, 0f, Color.royal);
         modHjson.inputs.get(0).value = "mymod";
@@ -275,7 +410,7 @@ public class StudioMod extends Mod {
 
     public static void executeNode(Node node, Script script) {
         Log.info("Executing node: " + node.label);
-        
+
         switch(node.type) {
             case "action":
                 executeAction(node);
@@ -283,11 +418,11 @@ public class StudioMod extends Mod {
                     executeNode(conn, script);
                 }
                 break;
-                
+
             case "logic":
                 executeLogic(node, script);
                 break;
-                
+
             case "event":
                 for(Node conn : node.connections) {
                     executeNode(conn, script);
@@ -298,7 +433,7 @@ public class StudioMod extends Mod {
 
     public static void executeAction(Node node) {
         String label = node.label.toLowerCase();
-        
+
         if(label.contains("message")) {
             String message = node.inputs.size > 0 ? node.inputs.get(0).value : "Hello!";
             Vars.ui.showInfoFade(message);
@@ -308,13 +443,13 @@ public class StudioMod extends Mod {
             try {
                 String unitName = node.inputs.get(0).value.toLowerCase().trim();
                 int amount = Integer.parseInt(node.inputs.get(1).value);
-                
+
                 UnitType type = Vars.content.units().find(u -> u.name.equals(unitName));
                 if(type == null) {
                     Log.warn("Unit not found: " + unitName);
                     type = UnitTypes.dagger;
                 }
-                
+
                 float spawnX = 0f, spawnY = 0f;
                 if(Vars.player != null && Vars.player.team() != null && Vars.player.team().core() != null) {
                     spawnX = Vars.player.team().core().x;
@@ -323,13 +458,13 @@ public class StudioMod extends Mod {
                     spawnX = Vars.player.x;
                     spawnY = Vars.player.y;
                 }
-                
+
                 for(int i = 0; i < amount; i++) {
                     float offsetX = (float)(Math.random() * 32f - 16f);
                     float offsetY = (float)(Math.random() * 32f - 16f);
                     type.spawn(Vars.player.team(), spawnX + offsetX, spawnY + offsetY);
                 }
-                
+
                 Vars.ui.showInfoFade("Spawned " + amount + "x " + type.name);
                 Log.info("Spawned " + amount + " " + unitName);
             } catch(Exception e) {
@@ -341,7 +476,7 @@ public class StudioMod extends Mod {
                 int x = Integer.parseInt(node.inputs.get(0).value);
                 int y = Integer.parseInt(node.inputs.get(1).value);
                 String blockName = node.inputs.get(2).value.toLowerCase().trim();
-                
+
                 Block block = Vars.content.blocks().find(b -> b.name.equals(blockName));
                 if(block != null && Vars.world != null) {
                     Vars.world.tile(x, y).setNet(block, Vars.player.team(), 0);
@@ -355,7 +490,7 @@ public class StudioMod extends Mod {
 
     public static void executeLogic(Node node, Script script) {
         String label = node.label.toLowerCase();
-        
+
         if(label.contains("wait")) {
             try {
                 float seconds = Float.parseFloat(node.inputs.get(0).value);
@@ -397,7 +532,7 @@ public class StudioMod extends Mod {
             String varValue = node.inputs.get(1).value;
             variables.put(varName, varValue);
             Log.info("Set variable: " + varName + " = " + varValue);
-            
+
             for(Node conn : node.connections) {
                 executeNode(conn, script);
             }
@@ -407,7 +542,7 @@ public class StudioMod extends Mod {
             String value = variables.get(varName, "undefined");
             Vars.ui.showInfoFade(varName + " = " + value);
             Log.info("Get variable: " + varName + " = " + value);
-            
+
             for(Node conn : node.connections) {
                 executeNode(conn, script);
             }
@@ -416,26 +551,23 @@ public class StudioMod extends Mod {
 
     public static boolean evaluateCondition(String condition) {
         condition = condition.trim().toLowerCase();
-        
-        // Simple boolean check
+
         if(condition.equals("true")) return true;
         if(condition.equals("false")) return false;
-        
-        // Variable comparison
+
         if(condition.contains("==")) {
             String[] parts = condition.split("==");
             if(parts.length == 2) {
                 String left = parts[0].trim();
                 String right = parts[1].trim();
-                
+
                 String leftVal = variables.get(left, left);
                 String rightVal = variables.get(right, right);
-                
+
                 return leftVal.equals(rightVal);
             }
         }
-        
-        // Number comparison
+
         if(condition.contains(">")) {
             String[] parts = condition.split(">");
             if(parts.length == 2) {
@@ -448,7 +580,7 @@ public class StudioMod extends Mod {
                 }
             }
         }
-        
+
         return true;
     }
 
