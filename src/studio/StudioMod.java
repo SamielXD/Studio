@@ -206,23 +206,25 @@ public class StudioMod extends Mod {
             
             table.add("[cyan]═══ FLOATING BUTTON ═══").padTop(10f).row();
             
-            table.add("Button Size: " + (int)buttonSize).padTop(10f);
+            Label sizeLabel = new Label("Button Size: " + (int)buttonSize);
+            table.add(sizeLabel).padTop(10f);
             Slider sizeSlider = new Slider(40f, 200f, 10f, false);
             sizeSlider.setValue(buttonSize);
             sizeSlider.moved(val -> {
                 buttonSize = val;
-                table.getCells().get(1).get().setText("Button Size: " + (int)buttonSize);
+                sizeLabel.setText("Button Size: " + (int)buttonSize);
                 setupFloatingButton();
                 saveSettings();
             });
             table.add(sizeSlider).width(400f).row();
             
-            table.add("Button Opacity: " + (int)(buttonOpacity * 100) + "%").padTop(10f);
+            Label opacityLabel = new Label("Button Opacity: " + (int)(buttonOpacity * 100) + "%");
+            table.add(opacityLabel).padTop(10f);
             Slider opacitySlider = new Slider(0.1f, 1f, 0.1f, false);
             opacitySlider.setValue(buttonOpacity);
             opacitySlider.moved(val -> {
                 buttonOpacity = val;
-                table.getCells().get(3).get().setText("Button Opacity: " + (int)(buttonOpacity * 100) + "%");
+                opacityLabel.setText("Button Opacity: " + (int)(buttonOpacity * 100) + "%");
                 setupFloatingButton();
                 saveSettings();
             });
