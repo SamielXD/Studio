@@ -17,7 +17,7 @@ public class NodeEditor extends BaseDialog {
     public NodeCanvas canvas;
     private String currentScriptName = "Untitled";
     private Label statusLabel;
-    public String editorMode = "game"; // FIXED: Changed from private to public
+    public String editorMode = "game";
 
     public NodeEditor() {
         super("Studio - Node Editor");
@@ -285,49 +285,80 @@ public class NodeEditor extends BaseDialog {
             }
 
             String json = file.readString();
+            
+            if(json == null || json.trim().isEmpty()) {
+                throw new Exception("File is empty");
+            }
+
             Json jsonParser = new Json();
             jsonParser.setIgnoreUnknownFields(true);
 
-            // FIXED: Use fromJson with proper class type
-            Seq<NodeData> nodeDataList = jsonParser.fromJson(Seq.class, NodeData.class, json);
+            @SuppressWarnings("unchecked")
+            Seq<Object> rawList = jsonParser.fromJson(Seq.class, json);
 
-            if(nodeDataList == null || nodeDataList.size == 0) {
+            if(rawList == null || rawList.size == 0) {
                 throw new Exception("No nodes in file");
             }
 
             canvas.nodes.clear();
             Seq<Node> loadedNodes = new Seq<>();
+            ObjectMap<String, String> idMap = new ObjectMap<>();
 
-            for(NodeData data : nodeDataList) {
+            for(Object rawObj : rawList) {
+                if(!(rawObj instanceof ObjectMap)) continue;
+                
+                @SuppressWarnings("unchecked")
+                ObjectMap<String, Object> raw = (ObjectMap<String, Object>) rawObj;
+
                 Node node = new Node();
-                node.id = data.id != null ? data.id : java.util.UUID.randomUUID().toString();
-                node.type = data.type != null ? data.type : "action";
-                node.label = data.label != null ? data.label : "Unknown";
-                node.x = data.x;
-                node.y = data.y;
-                node.value = data.value != null ? data.value : "";
-                node.color = data.color != null ? Color.valueOf(data.color) : Color.gray;
+                node.id = java.util.UUID.randomUUID().toString();
+                node.type = raw.get("type") != null ? raw.get("type").toString() : "action";
+                node.label = raw.get("label") != null ? raw.get("label").toString() : "Unknown";
+                node.x = raw.get("x") != null ? ((Number)raw.get("x")).floatValue() : 0f;
+                node.y = raw.get("y") != null ? ((Number)raw.get("y")).floatValue() : 0f;
+                node.value = raw.get("value") != null ? raw.get("value").toString() : "";
+                
+                String colorStr = raw.get("color") != null ? raw.get("color").toString() : "gray";
+                try {
+                    node.color = Color.valueOf(colorStr);
+                } catch(Exception e) {
+                    node.color = Color.gray;
+                }
+
                 node.setupInputs();
 
-                if(data.inputValues != null && data.inputValues.size > 0) {
-                    for(int i = 0; i < Math.min(node.inputs.size, data.inputValues.size); i++) {
-                        node.inputs.get(i).value = data.inputValues.get(i);
+                if(raw.get("inputValues") != null && raw.get("inputValues") instanceof Seq) {
+                    @SuppressWarnings("unchecked")
+                    Seq<Object> inputVals = (Seq<Object>)raw.get("inputValues");
+                    for(int i = 0; i < Math.min(node.inputs.size, inputVals.size); i++) {
+                        node.inputs.get(i).value = inputVals.get(i).toString();
                     }
                 }
+
+                String oldId = raw.get("id") != null ? raw.get("id").toString() : node.id;
+                idMap.put(oldId, node.id);
 
                 loadedNodes.add(node);
             }
 
-            // Restore connections
-            for(int i = 0; i < nodeDataList.size; i++) {
-                NodeData data = nodeDataList.get(i);
+            for(int i = 0; i < rawList.size; i++) {
+                if(!(rawList.get(i) instanceof ObjectMap)) continue;
+                
+                @SuppressWarnings("unchecked")
+                ObjectMap<String, Object> raw = (ObjectMap<String, Object>)rawList.get(i);
                 Node node = loadedNodes.get(i);
 
-                if(data.connectionIds != null && data.connectionIds.size > 0) {
-                    for(String connId : data.connectionIds) {
-                        Node target = loadedNodes.find(n -> n.id.equals(connId));
-                        if(target != null) {
-                            node.connections.add(target);
+                if(raw.get("connectionIds") != null && raw.get("connectionIds") instanceof Seq) {
+                    @SuppressWarnings("unchecked")
+                    Seq<Object> connIds = (Seq<Object>)raw.get("connectionIds");
+                    for(Object connIdObj : connIds) {
+                        String oldConnId = connIdObj.toString();
+                        String newConnId = idMap.get(oldConnId);
+                        if(newConnId != null) {
+                            Node target = loadedNodes.find(n -> n.id.equals(newConnId));
+                            if(target != null) {
+                                node.connections.add(target);
+                            }
                         }
                     }
                 }
@@ -374,24 +405,26 @@ public class NodeEditor extends BaseDialog {
     }
 
     private void executeModCreation() {
+        boolean hasModFolder = false;
         for(Node node : canvas.nodes) {
             if(node.label.equals("Create Mod Folder")) {
-                executeSingleNode(node);
+                hasModFolder = true;
+                String folderName = node.inputs.get(0).value;
+                Fi modFolder = Core.files.local("mods/" + folderName);
+                modFolder.mkdirs();
+                Log.info("Created mod folder: " + modFolder.path());
+
+                for(Node child : node.connections) {
+                    executeModNode(child, modFolder);
+                }
             }
         }
-        Vars.ui.showInfoFade("Mod structure created!");
-        statusLabel.setText("Mod created!");
-    }
-
-    private void executeSingleNode(Node node) {
-        if(node.label.equals("Create Mod Folder")) {
-            String modName = node.inputs.get(0).value;
-            Fi modFolder = Core.files.local("mods/" + modName);
-            modFolder.mkdirs();
-
-            for(Node child : node.connections) {
-                executeModNode(child, modFolder);
-            }
+        
+        if(!hasModFolder) {
+            Vars.ui.showInfoFade("Add 'Create Mod Folder' node first!");
+        } else {
+            Vars.ui.showInfoFade("Mod structure created!");
+            statusLabel.setText("Mod created!");
         }
     }
 
@@ -400,6 +433,7 @@ public class NodeEditor extends BaseDialog {
             String folderName = node.inputs.get(0).value;
             Fi folder = parentFolder.child(folderName);
             folder.mkdirs();
+            Log.info("Created folder: " + folder.path());
             for(Node child : node.connections) {
                 executeModNode(child, folder);
             }
@@ -415,7 +449,9 @@ public class NodeEditor extends BaseDialog {
                           "version: 1.0\n" +
                           "minGameVersion: 154\n";
 
-            parentFolder.child("mod.hjson").writeString(hjson);
+            Fi hjsonFile = parentFolder.child("mod.hjson");
+            hjsonFile.writeString(hjson);
+            Log.info("Created mod.hjson: " + hjsonFile.path());
         }
         else if(node.label.equals("Create Block File")) {
             String blockName = node.inputs.get(0).value;
@@ -427,7 +463,9 @@ public class NodeEditor extends BaseDialog {
                           "health: " + health + "\n" +
                           "size: " + size + "\n";
 
-            parentFolder.child(blockName + ".hjson").writeString(hjson);
+            Fi blockFile = parentFolder.child(blockName + ".hjson");
+            blockFile.writeString(hjson);
+            Log.info("Created block file: " + blockFile.path());
         }
         else if(node.label.equals("Create Unit File")) {
             String unitName = node.inputs.get(0).value;
@@ -439,7 +477,9 @@ public class NodeEditor extends BaseDialog {
                           "health: " + health + "\n" +
                           "speed: " + speed + "\n";
 
-            parentFolder.child(unitName + ".hjson").writeString(hjson);
+            Fi unitFile = parentFolder.child(unitName + ".hjson");
+            unitFile.writeString(hjson);
+            Log.info("Created unit file: " + unitFile.path());
         }
         else if(node.label.equals("Create Item File")) {
             String itemName = node.inputs.get(0).value;
@@ -449,7 +489,13 @@ public class NodeEditor extends BaseDialog {
             String hjson = "color: " + color + "\n" +
                           "cost: " + cost + "\n";
 
-            parentFolder.child(itemName + ".hjson").writeString(hjson);
+            Fi itemFile = parentFolder.child(itemName + ".hjson");
+            itemFile.writeString(hjson);
+            Log.info("Created item file: " + itemFile.path());
+        }
+
+        for(Node child : node.connections) {
+            executeModNode(child, parentFolder);
         }
     }
 
