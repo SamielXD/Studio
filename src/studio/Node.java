@@ -47,11 +47,7 @@ public class Node {
             inputs.add(new NodeInput("Block", "copper-wall"));
         }
         else if(label.equals("Create Mod Folder")) {
-            inputs.add(new NodeInput("Mod Name", "mymod"));
-            inputs.add(new NodeInput("Display Name", "My Mod"));
-            inputs.add(new NodeInput("Author", "YourName"));
-            inputs.add(new NodeInput("Description", "Custom mod"));
-            inputs.add(new NodeInput("Version", "1.0"));
+            inputs.add(new NodeInput("Folder Name", "mymod"));
         }
         else if(label.equals("Create Folder")) {
             inputs.add(new NodeInput("Folder Name", "content"));
